@@ -1,0 +1,2 @@
+npm i express prisma @prisma/client bcrypt jsonwebtoken morgan
+npm i -D typescript ts-node-dev @types/express @types/node @types/bcrypt @types/jsonwebtoken
