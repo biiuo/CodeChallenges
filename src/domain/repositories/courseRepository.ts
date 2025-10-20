@@ -2,8 +2,8 @@ import { course } from '../entities/courseEntity'
 
 export interface courseRepository {
   create(course: Partial<course>): Promise<course>;
-  findById(id: number): Promise<course | null>;
+  findByNrc(nrc: string): Promise<course | null>;
   findAll(): Promise<course[]>;
-  update(id: number, data: Partial<course>): Promise<course>;
-  delete(id: number): Promise<void>;
+  update(nrc: string, data: Partial<course>): Promise<course>;
+  delete(nrc: string): Promise<void>;
 }

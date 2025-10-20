@@ -1,10 +1,10 @@
-export enum ChallengeStatus {
+export enum challengeStatus {
   DRAFT = 'DRAFT',
   PUBLISHED = 'PUBLISHED',
   ARCHIVED = 'ARCHIVED'
 }
 
-export enum Difficulty {
+export enum difficulty {
   EASY = 'EASY',
   MEDIUM = 'MEDIUM',
   HARD = 'HARD'
@@ -15,11 +15,11 @@ export class challenge {
     public id: number,
     public title: string,
     public description: string,
-    public difficulty: Difficulty,
+    public difficulty: difficulty,
     public tags: string[],
     public timeLimit: number,
     public memoryLimit: number,
-    public status: ChallengeStatus,
+    public status: challengeStatus,
     public authorId: number
   ) {}
 }

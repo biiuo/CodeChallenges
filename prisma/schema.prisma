@@ -74,7 +74,7 @@ model User {
 /// Un curso tiene un código, un nombre, un periodo y un grupo.
 model Course {
   id        Int      @id @default(autoincrement())  // PK
-  nrc  String   @unique                        // Código único del curso (ej: NRC o identificador)
+  nrc  String  @unique                        // Código único del curso (ej: NRC o identificador)
   name      String                                // Nombre del curso
   period    String                                // Ej: "2025-1"
   group     String                              // Ej: "1" o "A"
