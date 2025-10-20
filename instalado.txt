@@ -1,2 +1,4 @@
-npm i express prisma @prisma/client bcrypt jsonwebtoken morgan
+npm i prisma @prisma/client bcrypt jsonwebtoken morgan
 npm i -D typescript ts-node-dev @types/express @types/node @types/bcrypt @types/jsonwebtoken
+npm install @nestjs/common @nestjs/core @nestjs/platform-express reflect-metadata rxjs
+npm install -D typescript ts-node @nestjs/cli @nestjs/schematics @nestjs/testing
