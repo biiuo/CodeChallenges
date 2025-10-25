@@ -1,4 +1,4 @@
-export class course {
+export class Course {
   constructor (
     public id: number,
     public nrc: string,

@@ -10,7 +10,7 @@ export enum difficulty {
   HARD = 'HARD'
 }
 
-export class challenge {
+export class Challenge {
   constructor (
     public id: number,
     public title: string,
