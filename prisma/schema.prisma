@@ -1,18 +1,16 @@
+// ===================================================
+// GENERADOR Y FUENTE DE DATOS
+// ===================================================
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-// ===================================================
-// Generador y fuente de datos
-// ===================================================
-
-
 
 // ===================================================
 // ENUMERACIONES: Roles, Estados, Dificultades
@@ -39,7 +37,8 @@ enum SubmissionStatus {
   RUNTIME_ERROR        // Error en ejecución
   COMPILATION_ERROR    // Error de compilación
 }
-enum Difficulty{
+
+enum Difficulty {
   EASY 
   MEDIUM
   HARD
@@ -57,15 +56,15 @@ model User {
   username  String   @unique                        // Nombre de usuario único
   email     String   @unique                        // Correo único
   password  String                                 // Contraseña cifrada
-  name      String                               // Nombre opcional
+  name      String                                // Nombre del usuario
   role      Role     @default(STUDENT)             // Rol del usuario
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relaciones:
-  courses   Course[]       @relation("CourseProfessor") // Cursos creados como profesor
-  courseEnrollments CourseStudent[] // Cursos inscritos como estudiante
-  submissions       Submission[]    // Submissions hechos por el usuario
+  courses           Course[]       @relation("CourseProfessor") // Cursos donde el usuario es profesor
+  courseEnrollments CourseStudent[]                            // Cursos donde el usuario es estudiante
+  submissions       Submission[]                               // Submissions realizados por el usuario
 }
 
 // ===================================================
@@ -74,18 +73,18 @@ model User {
 /// Un curso tiene un código, un nombre, un periodo y un grupo.
 model Course {
   id        Int      @id @default(autoincrement())  // PK
-  nrc  String  @unique                        // Código único del curso (ej: NRC o identificador)
+  nrc       String   @unique                       // Código único del curso (ej: NRC o identificador)
   name      String                                // Nombre del curso
   period    String                                // Ej: "2025-1"
-  group     String                              // Ej: "1" o "A"
+  group     String                                // Ej: "1" o "A"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relaciones:
-  professors  User[]          @relation("CourseProfessor") // Profesores asignados (N:M)
-  students    CourseStudent[]  // Estudiantes inscritos (N:M)
-  challenges  Challenge[]      // Retos asociados al curso (1:N)
-  evaluations Evaluation[]     // Evaluaciones o parciales (1:N)
+  professors  User[]           @relation("CourseProfessor") // Profesores asignados (N:M)
+  students    CourseStudent[]                              // Estudiantes inscritos (N:M)
+  challenges  Challenge[]                                  // Retos asociados al curso (1:N)
+  // evaluations Evaluation[]                               // Relación con evaluaciones (comentada por ahora)
 }
 
 // ===================================================
@@ -95,7 +94,7 @@ model CourseStudent {
   id         Int      @id @default(autoincrement()) // PK
   userId     Int                                    // FK → User.id
   courseId   Int                                    // FK → Course.id
-  enrolledAt DateTime @default(now())              // Fecha de inscripción
+  enrolledAt DateTime @default(now())               // Fecha de inscripción
 
   // Relaciones:
   user   User   @relation(fields: [userId], references: [id])
@@ -112,19 +111,19 @@ model Challenge {
   id          Int             @id @default(autoincrement()) // PK
   title       String
   description String
-  difficulty  Difficulty  @default(null)                   // Easy, Medium o Hard
-  tags        String[]                                 // Etiquetas temáticas (ej: ["arrays", "dp"])
-  timeLimit   Int                                      // Tiempo límite en milisegundos
-  memoryLimit Int                                      // Límite de memoria (MB)
+  difficulty  Difficulty  @default(EASY)                           
+  tags        String[]                                    // Etiquetas temáticas (ej: ["arrays", "dp"])
+  timeLimit   Int                                         // Tiempo límite en milisegundos
+  memoryLimit Int                                         // Límite de memoria (MB)
   status      ChallengeStatus @default(DRAFT)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   // Relaciones:
-  courseId  Int
-  course    Course   @relation(fields: [courseId], references: [id]) // Un reto pertenece a un curso
-  testcases Testcase[]   // Casos de prueba asociados (1:N)
-  submissions Submission[] // Envíos asociados (1:N)
+  courseId   Int
+  course     Course     @relation(fields: [courseId], references: [id]) // Un reto pertenece a un curso
+  testcases  Testcase[]                                                 // Casos de prueba asociados (1:N)
+  submissions Submission[]                                              // Envíos asociados (1:N)
 }
 
 // ===================================================
@@ -145,7 +144,6 @@ model Testcase {
 
 /// Envío (submission) de un estudiante para un reto.
 /// Guarda el código, lenguaje, estado y puntaje final.
-/*
 model Submission {
   id           Int              @id @default(autoincrement()) // PK
   language     String                                   // Lenguaje (ej: python, cpp)
@@ -158,39 +156,36 @@ model Submission {
   // Relaciones:
   userId       Int
   challengeId  Int
-  user         User      @relation(fields: [userId], references: [id]) // El usuario que envió
-  challenge    Challenge @relation(fields: [challengeId], references: [id]) // El reto asociado
+  user         User      @relation(fields: [userId], references: [id])        // El usuario que envió
+  challenge    Challenge @relation(fields: [challengeId], references: [id])   // El reto asociado
 }
 
 // ===================================================
+// MODELOS OPCIONALES (Evaluaciones) — DESACTIVADOS TEMPORALMENTE
+// ===================================================
 
-/// Evaluaciones o parciales.
-/// Agrupan varios retos bajo una fecha, duración y curso.
+/*
 model Evaluation {
-  id          Int      @id @default(autoincrement()) // PK
-  name        String                                // Ej: "Parcial 1"
-  date        DateTime                              // Fecha de realización
-  durationMin Int                                   // Duración en minutos
+  id          Int      @id @default(autoincrement())
+  name        String
+  date        DateTime
+  durationMin Int
   createdAt   DateTime @default(now())
 
   // Relaciones:
   courseId   Int
-  course     Course @relation(fields: [courseId], references: [id]) // Evaluación pertenece a un curso
-  challenges EvaluationChallenge[] // Relación N:M con retos
+  course     Course @relation(fields: [courseId], references: [id])
+  challenges EvaluationChallenge[]
 }
 
-// ===================================================
-
-/// Relación N:M entre evaluaciones y retos
 model EvaluationChallenge {
-  id           Int      @id @default(autoincrement()) // PK
-  evaluationId Int                                    // FK → Evaluation.id
-  challengeId  Int                                    // FK → Challenge.id
+  id           Int      @id @default(autoincrement())
+  evaluationId Int
+  challengeId  Int
 
-  // Relaciones:
   evaluation Evaluation @relation(fields: [evaluationId], references: [id])
   challenge  Challenge  @relation(fields: [challengeId], references: [id])
 
-  @@unique([evaluationId, challengeId]) // Evita duplicados en la relación
+  @@unique([evaluationId, challengeId])
 }
 */

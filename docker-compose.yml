@@ -3,12 +3,12 @@ version: "3.9"
 services:
   db:
     image: postgres:16
-    container_name: task_app_db
+    container_name: db_proyecto_final
     restart: unless-stopped
     environment:
-      POSTGRES_DB: task_app
-      POSTGRES_USER: kevin
-      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
     ports:
       - "5432:5432"
     volumes:
@@ -22,9 +22,9 @@ services:
     build:
       context: .
       target: development
-    container_name: task_app_api
+    container_name: api_proyecto_final
     environment:
-      DATABASE_URL: "postgresql://kevin:1234@db:5432/task_app?schema=public"
+      DATABASE_URL: "postgresql://user:pass@db:5432/db?schema=public"
     ports:
       - "3000:3000"
     depends_on:

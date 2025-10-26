@@ -1,0 +1,40 @@
+// src/application/use-cases/course/create-course.usecase.ts
+import { CourseRepository } from '../../../domain/repositories/course.repository';
+import { UserRepository } from '../../../domain/repositories/user.repository';
+import { Course } from '../../../domain/entities/course.entity';
+import { CreateCourseDTO } from '../../dtos/course';
+
+export class CreateCourseUseCase {
+  constructor(
+    private readonly courseRepo: CourseRepository,
+    private readonly userRepo: UserRepository, // 👈 para buscar profesores
+  ) {}
+
+  async execute(dto: CreateCourseDTO): Promise<Course> {
+    // 1️⃣ Validar si ya existe curso con ese NRC
+    const existing = await this.courseRepo.findByNrc(dto.nrc);
+    if (existing) throw new Error('Course already exists');
+
+    // 2️⃣ Si hay profesores, buscarlos
+    let professorIds: number[] = [];
+    if (dto.proffesorNrc && dto.proffesorNrc.length > 0) {
+      const professors = await Promise.all(
+        dto.proffesorNrc.map((codigo) => this.userRepo.findByCodigo(codigo))
+      );
+      professorIds = professors
+        .filter((p) => p !== null)
+        .map((p) => (p as any).id);
+
+      if (professorIds.length === 0) {
+        throw new Error('No valid professors found');
+      }
+    }
+
+    // 3️⃣ Crear la entidad del dominio
+    const course = new Course(0, dto.nrc, dto.name, dto.period, dto.group);
+
+    // 4️⃣ Guardar el curso y asociar profesores
+    const createdCourse = await this.courseRepo.createWithProfessors(course, professorIds);
+    return createdCourse;
+  }
+}

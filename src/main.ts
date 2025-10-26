@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = new DocumentBuilder()
-    .setTitle('Tasks App')
+    .setTitle('Code Challenge Platform ')
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);

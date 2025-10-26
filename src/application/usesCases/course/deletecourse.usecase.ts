@@ -1,0 +1,18 @@
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import * as courseRepository from '../../../domain/repositories/course.repository';
+import { Course } from '../../../domain/entities/course.entity';
+
+@Injectable()
+export class DeleteCourseUseCase {
+  constructor(
+    @Inject('ICourseRepository')
+    private readonly courseRepo: courseRepository.CourseRepository,
+  ) {}
+
+  async execute(nrc: string): Promise<void> {
+    const existing = await this.courseRepo.findByNrc(nrc);
+    if (!existing) throw new NotFoundException('Course not found');
+
+    await this.courseRepo.delete(nrc);
+  }
+}

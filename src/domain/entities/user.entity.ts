@@ -1,7 +1,7 @@
-export enum role {
+export enum Role {
   STUDENT = 'STUDENT',
-  PROFESSOR = 'PROFESSOR',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  PROFESSOR = 'PROFESSOR'
 }
 export class User {
   constructor (
@@ -11,6 +11,6 @@ export class User {
     public username: string,
     public email: string,
     public password: string,
-    public role: role,
+    public role: Role,
   ) {}
 }
