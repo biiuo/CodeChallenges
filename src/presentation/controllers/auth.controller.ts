@@ -123,15 +123,20 @@ export class AuthController {
   }
 
   private async signTokens(userId: string, role: string) {
+    const payload: Record<string, any> = { 
+      sub: userId, 
+      role: role
+    };
+    
     const [access, refresh] = await Promise.all([
-      this.jwt.signAsync(
-        { sub: userId, role },
-        { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
-      ),
-      this.jwt.signAsync(
-        { sub: userId, role },
-        { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
-      ),
+      this.jwt.signAsync(payload, {
+        secret: process.env.JWT_ACCESS_SECRET, 
+        expiresIn: '15m'
+      }),
+      this.jwt.signAsync(payload, {
+        secret: process.env.JWT_REFRESH_SECRET, 
+        expiresIn: '7d'
+      }),
     ]);
     return { access, refresh };
   }

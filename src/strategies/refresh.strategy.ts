@@ -6,10 +6,15 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   constructor() {
     super({
-      jwtFromRequest: ExtractJwt.fromBodyField('refresh_token'),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // Extract from Authorization header
       secretOrKey: process.env.JWT_REFRESH_SECRET!,
       ignoreExpiration: false,
     });
   }
-  validate(payload: any) { return { userId: payload.sub, roles: payload.roles }; }
+  validate(payload: any) { 
+    return { 
+      userId: payload.sub, 
+      role: payload.role // Changed from roles to role (singular)
+    }; 
+  }
 }
