@@ -81,10 +81,10 @@ model Course {
   updatedAt DateTime @updatedAt
 
   // Relaciones:
-  professors  User[]           @relation("CourseProfessor") // Profesores asignados (N:M)
-  students    CourseStudent[]                               // Estudiantes inscritos (N:M)
-  challenges  Challenge[]                                   // Retos asociados al curso (1:N)
-  evaluations Evaluation[]                                  // Relación con evaluaciones
+  professors  User[]           @relation("CourseProfessor")   // Profesores asignados (N:M)
+  students    CourseStudent[]                                 // Estudiantes inscritos (N:M)
+  challenges  Challenge[]      @relation("CourseChallenges")  // Retos asociados al curso (1:N)
+  evaluations Evaluation[]                                    // Relación con evaluaciones
   submissions Submission[]
 }
 
