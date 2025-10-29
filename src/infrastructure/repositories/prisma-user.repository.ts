@@ -14,7 +14,7 @@ export class PrismaUserRepository implements UserRepository {
   async create(data: Partial<User>): Promise<User> {
     const user = await this.prisma.user.create({
       data: {
-        codigo: data.codigo!,
+        code: data.code!,
         username: data.username!,
         email: data.email!,
         password: data.password!,
@@ -35,8 +35,8 @@ export class PrismaUserRepository implements UserRepository {
     return user ? UserMapper.toDomain(user) : null;
   }
 
-  async findByCodigo(codigo: string): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({ where: { codigo } });
+  async findByCodigo(code: string): Promise<User | null> {
+    const user = await this.prisma.user.findUnique({ where: { code } });
     return user ? UserMapper.toDomain(user) : null;
   }
 
@@ -50,9 +50,9 @@ export class PrismaUserRepository implements UserRepository {
     return users.map(UserMapper.toDomain);
   }
 
-  async update(codigo: string, data: Partial<User>): Promise<User> {
+  async update(code: string, data: Partial<User>): Promise<User> {
     const user = await this.prisma.user.update({
-      where: { codigo },
+      where: { code },
       data: {
         name: data.name,
         password: data.password,

@@ -17,13 +17,13 @@ export class CreateUserUseCase {
     if (existingUser) throw new Error('Username already exists');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Crear entidad de dominio
     const user = new User(
       randomUUID(),
       dto.name ?? '',
-      codigo,
+      code,
       dto.username,
       dto.email,
       passwordHash,

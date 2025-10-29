@@ -26,9 +26,9 @@ export class UserController {
 
  
 
-  @Put(':codigo')
-  async update(@Param('codigo') codigo: string, @Body() data: Partial<RegisterDTO>) {
-    return this.updateUser.execute(codigo, data);
+  @Put(':code')
+  async update(@Param('code') code: string, @Body() data: Partial<RegisterDTO>) {
+    return this.updateUser.execute(code, data);
   }
 
   @Delete(':id')

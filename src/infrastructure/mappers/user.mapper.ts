@@ -8,7 +8,7 @@ export class UserMapper {
     return new User(
       prismaUser.id,
       prismaUser.name,
-      prismaUser.codigo,
+      prismaUser.code,
       prismaUser.username,
       prismaUser.email,
       prismaUser.password,
@@ -20,7 +20,7 @@ export class UserMapper {
     return {
       id: domainUser.id,
       name: domainUser.name,
-      codigo: domainUser.codigo,
+      code: domainUser.code,
       username: domainUser.username,
       email: domainUser.email,
       password: domainUser.password,

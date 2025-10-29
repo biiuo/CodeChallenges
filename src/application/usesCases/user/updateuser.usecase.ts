@@ -6,8 +6,8 @@ import * as bcrypt from 'bcrypt';
 export class UpdateUserUseCase {
   constructor(private readonly userRepo: UserRepository) {}
 
-  async execute(codigo: string, dto: UpdateUserDTO): Promise<User> {
-    const user = await this.userRepo.findByCodigo(codigo);
+  async execute(code: string, dto: UpdateUserDTO): Promise<User> {
+    const user = await this.userRepo.findByCodigo(code);
     if (!user) throw new Error('User not found');
 
     let updatedData: any = { ...dto };
@@ -15,6 +15,6 @@ export class UpdateUserUseCase {
       updatedData.password = await bcrypt.hash(dto.password, 10);
     }
 
-    return this.userRepo.update(codigo, updatedData);
+    return this.userRepo.update(code, updatedData);
   }
 }

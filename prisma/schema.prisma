@@ -52,7 +52,7 @@ enum Difficulty {
 /// Se puede buscar tanto por `username` como por `codigo` (ambos únicos).
 model User {
   id        String   @id @default(uuid())           // PK
-  codigo    String   @unique                        // Código institucional o identificador interno
+  code      String   @unique                        // Código institucional o identificador interno
   username  String   @unique                        // Nombre de usuario único
   email     String   @unique                        // Correo único
   password  String                                  // Contraseña cifrada
