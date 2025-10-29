@@ -22,12 +22,12 @@ export class PrismaSubmissionRepository implements SubmissionRepository {
     return submission ? SubmissionMapper.toDomain(submission) : null;
   }
 
-  async findByUser(userId: number): Promise<Submission[]> {
+  async findByUser(userId: string): Promise<Submission[]> {
     const subs = await this.prisma.submission.findMany({ where: { userId } });
     return subs.map(SubmissionMapper.toDomain);
   }
 
-  async findByChallenge(challengeId: number): Promise<Submission[]> {
+  async findByChallenge(challengeId: string): Promise<Submission[]> {
     const subs = await this.prisma.submission.findMany({ where: { challengeId } });
     return subs.map(SubmissionMapper.toDomain);
   }

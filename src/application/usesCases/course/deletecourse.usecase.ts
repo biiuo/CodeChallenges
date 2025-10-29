@@ -9,10 +9,10 @@ export class DeleteCourseUseCase {
     private readonly courseRepo: courseRepository.CourseRepository,
   ) {}
 
-  async execute(nrc: string): Promise<void> {
-    const existing = await this.courseRepo.findByNrc(nrc);
+  async execute(code: string): Promise<void> {
+    const existing = await this.courseRepo.findByCode(code);
     if (!existing) throw new NotFoundException('Course not found');
 
-    await this.courseRepo.delete(nrc);
+    await this.courseRepo.delete(code);
   }
 }

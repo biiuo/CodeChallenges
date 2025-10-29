@@ -3,11 +3,11 @@ import { ChallengeStatus } from '../entities/challenge.entity';
 
 export interface ChallengeRepository {
   create(data: Partial<Challenge>): Promise<Challenge>;
-  findById(id: number): Promise<Challenge | null>;
+  findById(id: string): Promise<Challenge | null>;
   findAll(): Promise<Challenge[]>;
-  findByCourse(courseId: number): Promise<Challenge[]>;
+  findByCourse(courseId: string): Promise<Challenge[]>;
   findByStatus(status: ChallengeStatus): Promise<Challenge[]>;
   findPublished(): Promise<Challenge[]>; // published challenges only
-  update(id: number, data: Partial<Challenge>): Promise<Challenge>;
-  delete(id: number): Promise<void>;
+  update(id: string, data: Partial<Challenge>): Promise<Challenge>;
+  delete(id: string): Promise<void>;
 }

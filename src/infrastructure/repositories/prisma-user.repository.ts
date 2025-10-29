@@ -25,7 +25,7 @@ export class PrismaUserRepository implements UserRepository {
     return UserMapper.toDomain(user);
   }
 
-  async findById(id: number): Promise<User | null> {
+  async findById(id: string): Promise<User | null> {
     const user = await this.prisma.user.findUnique({ where: { id } });
     return user ? UserMapper.toDomain(user) : null;
   }
@@ -62,7 +62,7 @@ export class PrismaUserRepository implements UserRepository {
     return UserMapper.toDomain(user);
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await this.prisma.user.delete({ where: { id } });
   }
 

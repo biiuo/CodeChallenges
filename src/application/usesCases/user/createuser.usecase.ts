@@ -3,6 +3,7 @@ import { User ,Role} from '../../../domain/entities/user.entity';
 import { RegisterDTO } from '../../dtos/user';
 import * as bcrypt from 'bcrypt';
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 @Injectable()
 export class CreateUserUseCase {
   constructor(private readonly userRepo: userRepository.UserRepository) { }
@@ -20,7 +21,7 @@ export class CreateUserUseCase {
 
     // Crear entidad de dominio
     const user = new User(
-      0, // id provisional (autoincremental)
+      randomUUID(),
       dto.name ?? '',
       codigo,
       dto.username,

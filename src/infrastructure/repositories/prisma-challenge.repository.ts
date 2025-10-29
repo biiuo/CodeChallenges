@@ -12,19 +12,24 @@ export class PrismaChallengeRepository implements ChallengeRepository {
       data: {
         title: data.title!,
         description: data.description!,
-        difficulty: data.difficulty ?? undefined, // ✅ acepta null
+        difficulty: data.difficulty ?? undefined,
         tags: data.tags ?? [],
         timeLimit: data.timeLimit!,
         memoryLimit: data.memoryLimit!,
         status: data.status ?? ChallengeStatus.DRAFT,
-        courseId: data.courseId!,
+        isPublic: data.isPublic ?? false,
+        authorId: data.authorId!,
       },
+      include: {
+        courses: true,
+        author: true
+      }
     });
 
     return this.toDomain(created);
   }
 
-  async findById(id: number): Promise<Challenge | null> {
+  async findById(id: string): Promise<Challenge | null> {
     const found = await this.prisma.challenge.findUnique({ where: { id } });
     return found ? this.toDomain(found) : null;
   }
@@ -34,8 +39,20 @@ export class PrismaChallengeRepository implements ChallengeRepository {
     return list.map(this.toDomain);
   }
 
-  async findByCourse(courseId: number): Promise<Challenge[]> {
-    const list = await this.prisma.challenge.findMany({ where: { courseId } });
+  async findByCourse(courseId: string): Promise<Challenge[]> {
+    const list = await this.prisma.challenge.findMany({ 
+      where: { 
+        courses: {
+          some: {
+            id: courseId
+          }
+        }
+      },
+      include: {
+        courses: true,
+        author: true
+      }
+    });
     return list.map(this.toDomain);
   }
 
@@ -51,7 +68,7 @@ export class PrismaChallengeRepository implements ChallengeRepository {
     return list.map(this.toDomain);
   }
 
-  async update(id: number, data: Partial<Challenge>): Promise<Challenge> {
+  async update(id: string, data: Partial<Challenge>): Promise<Challenge> {
     const updated = await this.prisma.challenge.update({
       where: { id },
       data: {
@@ -62,14 +79,15 @@ export class PrismaChallengeRepository implements ChallengeRepository {
         timeLimit: data.timeLimit,
         memoryLimit: data.memoryLimit,
         status: data.status,
-        courseId: data.courseId,
+        isPublic: data.isPublic,
+        authorId: data.authorId,
       },
     });
 
     return this.toDomain(updated);
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await this.prisma.challenge.delete({ where: { id } });
   }
 
@@ -84,7 +102,8 @@ export class PrismaChallengeRepository implements ChallengeRepository {
       prismaChallenge.timeLimit,
       prismaChallenge.memoryLimit,
       prismaChallenge.status,
-      prismaChallenge.courseId,
+      prismaChallenge.isPublic,
+      prismaChallenge.authorId,
     );
   }
 }

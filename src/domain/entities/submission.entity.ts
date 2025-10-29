@@ -17,8 +17,8 @@ export class Submission {
   score?: number;
   timeMsTotal?: number;
   createdAt?: Date;
-  userId!: number;
-  challengeId!: number;
+  userId!: string;
+  challengeId!: string;
 
   constructor(props: Partial<Submission>) {
     Object.assign(this, props);

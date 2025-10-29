@@ -5,7 +5,7 @@ import { ChallengeRepository } from '../../../domain/repositories/challenge.repo
 export class DeleteChallengeUseCase {
   constructor(private readonly challengeRepository: ChallengeRepository) {}
 
-  async execute(id: number): Promise<void> {
+  async execute(id: string): Promise<void> {
     const challenge = await this.challengeRepository.findById(id);
     if (!challenge) throw new NotFoundException('Challenge not found');
     await this.challengeRepository.delete(id);

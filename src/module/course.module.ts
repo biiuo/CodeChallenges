@@ -3,7 +3,7 @@ import { CoursesController } from '../presentation/controllers/course.controller
 import { PrismaService } from '../infrastructure/persistence/prisma.service';
 import { PrismaCourseRepository } from '../infrastructure/repositories/prisma-course.repository';
 import { CreateCourseUseCase } from '../application/usesCases/course/createcourse.usecase';
-import { FindCourseByNrcUseCase } from '../application/usesCases/course/findcourse.usecase';
+import { FindCourseByCodeUseCase } from '../application/usesCases/course/findcourse.usecase';
 import { FindAllCoursesUseCase } from '../application/usesCases/course/findallcourse.usecase';
 import { UpdateCourseUseCase } from '../application/usesCases/course/updatecourse.usecase';
 import { DeleteCourseUseCase } from '../application/usesCases/course/deletecourse.usecase';
@@ -19,7 +19,7 @@ import { DeleteCourseUseCase } from '../application/usesCases/course/deletecours
     },
     // 👇 Agrega TODOS tus casos de uso aquí:
     CreateCourseUseCase,
-    FindCourseByNrcUseCase,
+    FindCourseByCodeUseCase,
     FindAllCoursesUseCase,
     UpdateCourseUseCase,  // ← este faltaba
     DeleteCourseUseCase,

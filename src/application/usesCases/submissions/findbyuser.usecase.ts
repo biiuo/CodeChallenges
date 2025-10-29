@@ -6,7 +6,7 @@ import { Submission } from '../../../domain/entities/submission.entity';
 export class FindSubmissionsByUserUseCase {
   constructor(private readonly submissionRepo: submissionRepository.SubmissionRepository) {}
 
-  async execute(userId: number): Promise<Submission[]> {
+  async execute(userId: string): Promise<Submission[]> {
     return this.submissionRepo.findByUser(userId);
   }
 }

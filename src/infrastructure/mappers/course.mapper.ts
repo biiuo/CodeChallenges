@@ -6,20 +6,18 @@ export class CourseMapper {
   static toDomain(prismaCourse: PrismaCourse): Course {
     return new Course(
       prismaCourse.id,
-      prismaCourse.nrc,
+      prismaCourse.code,
       prismaCourse.name,
       prismaCourse.period,
-      prismaCourse.group,
     );
   }
 
   static toPrisma(domainCourse: Course): Omit<PrismaCourse, 'createdAt' | 'updatedAt'> {
     return {
       id: domainCourse.id,
-      nrc: domainCourse.nrc,
+      code: domainCourse.code,
       name: domainCourse.name,
       period: domainCourse.period,
-      group: domainCourse.group,
     } as PrismaCourse;
   }
 }

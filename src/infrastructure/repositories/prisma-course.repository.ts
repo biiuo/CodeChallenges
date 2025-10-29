@@ -12,22 +12,20 @@ export class PrismaCourseRepository implements CourseRepository {
   async create(course: Partial<Course>): Promise<Course> {
     const created = await this.prisma.course.create({
       data: {
-        nrc: course.nrc!,
+        code: course.code!,
         name: course.name!,
         period: course.period!,
-        group: course.group!,
       },
     });
     return CourseMapper.toDomain(created);
   }
 
-  async createWithProfessors(course: Partial<Course>, professorIds: number[]): Promise<Course> {
+  async createWithProfessors(course: Partial<Course>, professorIds: string[]): Promise<Course> {
     const created = await this.prisma.course.create({
       data: {
-        nrc: course.nrc!,
+        code: course.code!,
         name: course.name!,
         period: course.period!,
-        group: course.group!,
         professors: {
           connect: professorIds.map((id) => ({ id })),
         },
@@ -37,13 +35,13 @@ export class PrismaCourseRepository implements CourseRepository {
     return CourseMapper.toDomain(created);
   }
 
-  async findById(id: number): Promise<Course | null> {
+  async findById(id: string): Promise<Course | null> {
     const course = await this.prisma.course.findUnique({ where: { id } });
     return course ? CourseMapper.toDomain(course) : null;
   }
 
- async findByNrc(nrc: string): Promise<Course | null> {
-    const course = await this.prisma.course.findUnique({ where: { nrc } });
+ async findByCode(code: string): Promise<Course | null> {
+    const course = await this.prisma.course.findUnique({ where: { code } });
     return course ? (course as unknown as Course) : null;
   }
 
@@ -52,15 +50,15 @@ export class PrismaCourseRepository implements CourseRepository {
     return this.prisma.course.findMany();
   }
 
-  async update(nrc: string, data: Partial<Course>): Promise<Course> {
+  async update(code: string, data: Partial<Course>): Promise<Course> {
     const updated = await this.prisma.course.update({
-      where: { nrc },
+      where: { code },
       data,
     });
     return CourseMapper.toDomain(updated);
   }
 
-  async delete(nrc: string): Promise<void> {
-    await this.prisma.course.delete({ where: { nrc } });
+  async delete(code: string): Promise<void> {
+    await this.prisma.course.delete({ where: { code } });
   }
 }

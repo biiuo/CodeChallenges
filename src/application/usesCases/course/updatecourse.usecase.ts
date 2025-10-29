@@ -9,10 +9,10 @@ export class UpdateCourseUseCase {
     private readonly courseRepo: courseRepository.CourseRepository,
   ) {}
 
-  async execute(nrc: string, data: Partial<Course>): Promise<Course> {
-    const existing = await this.courseRepo.findByNrc(nrc);
+  async execute(code: string, data: Partial<Course>): Promise<Course> {
+    const existing = await this.courseRepo.findByCode(code);
     if (!existing) throw new NotFoundException('Course not found');
 
-    return this.courseRepo.update(nrc, data);
+    return this.courseRepo.update(code, data);
   }
 }

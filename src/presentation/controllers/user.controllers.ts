@@ -20,8 +20,8 @@ export class UserController {
   }
 
 @Get(':id')
-  async findById(@Param('id') id: number) {
-    return this.findUser.execute(Number(id));//hacer las validaciones en use cases
+  async findById(@Param('id') id: string) {
+    return this.findUser.execute(id);
   }
 
  
@@ -32,7 +32,7 @@ export class UserController {
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: number) {
-    return this.deleteUser.execute(Number(id));
+  async delete(@Param('id') id: string) {
+    return this.deleteUser.execute(id);
   }
 }

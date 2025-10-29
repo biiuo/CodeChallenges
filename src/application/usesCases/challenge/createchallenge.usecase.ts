@@ -2,6 +2,7 @@ import { Injectable,Inject } from '@nestjs/common';
 import * as challengeRepository from '../../../domain/repositories/challenge.repository';
 import { Challenge,ChallengeStatus } from '../../../domain/entities/challenge.entity';
 import {CreateChallengeDto } from '../../dtos/challenges';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class CreateChallengeUseCase {
@@ -12,7 +13,7 @@ export class CreateChallengeUseCase {
   async execute(dto: CreateChallengeDto): Promise<Challenge> {
     // Validaciones (comentadas) -> ej: comprobar difficulty, limits, tags length
     const challenge = new Challenge(
-      0,
+      randomUUID(),
       dto.title,
       dto.description,
       dto.difficulty as any,
@@ -20,7 +21,8 @@ export class CreateChallengeUseCase {
       dto.timeLimit,
       dto.memoryLimit,
       dto.status ? (dto.status as ChallengeStatus) : ChallengeStatus.DRAFT,
-      dto.courseId // en tu entidad aparece authorId, pero si representas authorId pasa aquí
+      dto.isPublic ?? false,
+      dto.authorId,
     );
 
     return this.challengeRepo.create(challenge);

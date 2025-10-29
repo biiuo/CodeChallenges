@@ -21,9 +21,12 @@ export class CreateChallengeDto {
   memoryLimit!: number;
 
   // @IsInt()
-  courseId!: number;
+  authorId!: string;
+
   // @IsEnum(ChallengeStatus)
   status?: string;
+
+  isPublic?: boolean;
 }
 
 // DTO para actualizar un reto
@@ -35,5 +38,5 @@ export class UpdateChallengeDto {
   timeLimit?: number;
   memoryLimit?: number;
   status?: ChallengeStatus
-  coursenrc?: string;
+  courseCode?: string;
 }

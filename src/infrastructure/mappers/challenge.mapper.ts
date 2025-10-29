@@ -14,7 +14,8 @@ export class ChallengeMapper {
       prismaChallenge.timeLimit,
       prismaChallenge.memoryLimit,
       EnumMapper.toDomainChallengeStatus(prismaChallenge.status),
-      prismaChallenge.courseId,
+      prismaChallenge.isPublic,
+      prismaChallenge.authorId,
     );
   }
 
@@ -28,7 +29,7 @@ export class ChallengeMapper {
       timeLimit: domainChallenge.timeLimit,
       memoryLimit: domainChallenge.memoryLimit,
       status: EnumMapper.toPrismaChallengeStatus(domainChallenge.status),
-      courseId: domainChallenge.courseId,
+      authorId: domainChallenge.authorId,
     } as PrismaChallenge;
   }
 }

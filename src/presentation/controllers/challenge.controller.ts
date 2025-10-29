@@ -40,14 +40,14 @@ export class ChallengesController {
 
   // GET /challenges/:id
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(@Param('id', ParseIntPipe) id: string) {
     return await this.getChallengeByIdUseCase.execute(id);
   }
 
   // PUT /challenges/:id
   @Put(':id')
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: string,
     @Body() data: UpdateChallengeDto,
   ) {
     return await this.updateChallengeUseCase.execute(id, data);
@@ -55,7 +55,7 @@ export class ChallengesController {
 
   // DELETE /challenges/:id
   @Delete(':id')
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id', ParseIntPipe) id: string) {
     return await this.deleteChallengeUseCase.execute(id);
   }
 }

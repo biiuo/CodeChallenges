@@ -6,7 +6,7 @@ import { User } from '../../../domain/entities/user.entity';
 export class FindUserByIdUseCase {
   constructor(private readonly userRepo: userRepository.UserRepository) {}
 
-  async execute(id: number): Promise<User> {
+  async execute(id: string): Promise<User> {
     const u = await this.userRepo.findById(id);
     if (!u) throw new NotFoundException('User not found');
     return u;

@@ -12,14 +12,15 @@ export enum Difficulty {
 
 export class Challenge {
   constructor (
-    public id: number,
+    public id: string,
     public title: string,
     public description: string,
-    public difficulty: Difficulty ,
+    public difficulty: Difficulty,
     public tags: string[],
     public timeLimit: number,
     public memoryLimit: number,
     public status: ChallengeStatus,
-    public courseId: number
+    public isPublic: boolean,
+    public authorId: string
   ) {}
 }

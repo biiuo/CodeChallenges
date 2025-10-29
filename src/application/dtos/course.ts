@@ -1,16 +1,16 @@
 export class CreateCourseDTO {
-    nrc:string
+    code:string
     name:string
     period:string
     group:string
-    proffesorNrc?:string[]
+    professorCode?:string[]
 }
 
 export class UpdateCourseDto {
-  nrc?: string;
+  code?: string;
   name?: string;
   period?: string;
   group?: string;
-  professorNrc?: string[];
+  professorCode?: string[];
 
 }

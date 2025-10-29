@@ -8,7 +8,7 @@ export class FindChallengeByIdUseCase {
      @Inject('IChallengeRepository')
     private readonly challengeRepo: challengeRepository.ChallengeRepository) {}
 
-  async execute(id: number): Promise<Challenge> {
+  async execute(id: string): Promise<Challenge> {
     const ch = await this.challengeRepo.findById(id);
     if (!ch) throw new NotFoundException('Challenge not found');
     return ch;

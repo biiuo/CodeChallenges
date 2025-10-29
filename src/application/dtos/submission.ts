@@ -7,10 +7,10 @@ export class CreateSubmissionDto {
   code!: string;
 
   // @IsInt()
-  userId!: number;
+  userId!: string;
 
   // @IsInt()
-  challengeId!: number;
+  challengeId!: string;
 }
 
 // DTO para actualizar el estado de un envío

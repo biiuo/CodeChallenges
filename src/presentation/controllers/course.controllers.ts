@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, Param, Put, Delete } from '@nestjs/common';
 import { CreateCourseUseCase } from '../../application/usesCases/course/createcourse.usecase';
-import { FindCourseByNrcUseCase } from '../../application/usesCases/course/findcourse.usecase';
+import { FindCourseByCodeUseCase } from '../../application/usesCases/course/findcourse.usecase';
 import { FindAllCoursesUseCase } from '../../application/usesCases/course/findallcourse.usecase';
 import { UpdateCourseUseCase } from '../../application/usesCases/course/updatecourse.usecase';
 import { DeleteCourseUseCase } from '../../application/usesCases/course/deletecourse.usecase';
@@ -10,7 +10,7 @@ import { CreateCourseDTO } from '../../application/dtos/course';
 export class CoursesController {
   constructor(
     private readonly createCourse: CreateCourseUseCase,
-    private readonly findCourse: FindCourseByNrcUseCase,
+    private readonly findCourse: FindCourseByCodeUseCase,
     private readonly getAllCourses: FindAllCoursesUseCase,
     private readonly updateCourse: UpdateCourseUseCase,
     private readonly deleteCourse: DeleteCourseUseCase,
@@ -26,18 +26,18 @@ export class CoursesController {
     return this.getAllCourses.execute();
   }
 
-  @Get(':nrc')
-  async findOne(@Param('nrc') nrc: string) {
-    return this.findCourse.execute(nrc);
+  @Get(':code')
+  async findOne(@Param('code') code: string) {
+    return this.findCourse.execute(code);
   }
 
-  @Put(':nrc')
-  async update(@Param('nrc') nrc: string, @Body() dto: any) {
-    return this.updateCourse.execute(nrc, dto);
+  @Put(':code')
+  async update(@Param('code') code: string, @Body() dto: any) {
+    return this.updateCourse.execute(code, dto);
   }
 
-  @Delete(':nrc')
-  async remove(@Param('nrc') nrc: string) {
-    return this.deleteCourse.execute(nrc);
+  @Delete(':code')
+  async remove(@Param('code') code: string) {
+    return this.deleteCourse.execute(code);
   }
 }

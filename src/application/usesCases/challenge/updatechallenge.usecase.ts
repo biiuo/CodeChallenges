@@ -9,7 +9,7 @@ export class UpdateChallengeUseCase {
      @Inject('IChallengeRepository')
     private readonly challengeRepo: challengeRepository.ChallengeRepository) {}
 
-  async execute(id: number, dto: UpdateChallengeDto): Promise<Challenge> {
+  async execute(id: string, dto: UpdateChallengeDto): Promise<Challenge> {
     // 🧹 Convertir null → undefined
     const cleanDto: Partial<Challenge> = {
       ...dto,
