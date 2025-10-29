@@ -6,7 +6,6 @@ import { Challenge } from '../../../domain/entities/challenge.entity';
 export class FindAllChallengesUseCase {
 
   constructor(
-     @Inject('IChallengeRepository')
     private readonly challengeRepo: challengeRepository.ChallengeRepository) {}
 
   async execute(): Promise<Challenge[]> {

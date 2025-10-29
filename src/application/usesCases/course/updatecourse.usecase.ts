@@ -5,7 +5,6 @@ import { Course } from '../../../domain/entities/course.entity';
 @Injectable()
 export class UpdateCourseUseCase {
   constructor(
-    @Inject('ICourseRepository')
     private readonly courseRepo: courseRepository.CourseRepository,
   ) {}
 

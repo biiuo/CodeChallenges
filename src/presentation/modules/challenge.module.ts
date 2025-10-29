@@ -7,21 +7,51 @@ import { FindAllChallengesUseCase } from '../../application/usesCases/challenge/
 import { FindChallengeByIdUseCase } from '../../application/usesCases/challenge/findchallengebyid.usecase';
 import { UpdateChallengeUseCase } from '../../application/usesCases/challenge/updatechallenge.usecase';
 import { DeleteChallengeUseCase } from '../../application/usesCases/challenge/deletechallenge.usecase';
+import { CHALLENGE_REPOSITORY } from 'src/application/tokens';
+
+const usePrisma = !!process.env.DATABASE_URL;
 
 @Module({
   controllers: [ChallengesController],
   providers: [
-    PrismaService,
-    PrismaChallengeRepository,
+    ...([PrismaService]),
     {
-      provide: 'IChallengeRepository',
-      useExisting: PrismaChallengeRepository,
+      provide: CHALLENGE_REPOSITORY,
+      useFactory: (prisma?: PrismaService) => {
+        return new PrismaChallengeRepository(prisma!);
+      },
+      inject: usePrisma ? [PrismaService] : [],
     },
-    CreateChallengeUseCase,
-    FindAllChallengesUseCase,
-    FindChallengeByIdUseCase,
-    UpdateChallengeUseCase,
-    DeleteChallengeUseCase,
+    {
+      provide: CreateChallengeUseCase,
+      useFactory: (repo: any) => new CreateChallengeUseCase(repo),
+      inject: [CHALLENGE_REPOSITORY]
+    },
+    {
+      provide: DeleteChallengeUseCase,
+      useFactory: (repo: any) => new DeleteChallengeUseCase(repo),
+      inject: [CHALLENGE_REPOSITORY]
+    },
+    {
+      provide: FindAllChallengesUseCase,
+      useFactory: (repo: any) => new FindAllChallengesUseCase(repo),
+      inject: [CHALLENGE_REPOSITORY]
+    },
+    {
+      provide: FindChallengeByIdUseCase,
+      useFactory: (repo: any) => new FindChallengeByIdUseCase(repo),
+      inject: [CHALLENGE_REPOSITORY]
+    },
+    {
+      provide: UpdateChallengeUseCase,
+      useFactory: (repo: any) => new UpdateChallengeUseCase(repo),
+      inject: [CHALLENGE_REPOSITORY]
+    },
+    {
+      provide: FindAllChallengesUseCase,
+      useFactory: (repo: any) => new FindAllChallengesUseCase(repo),
+      inject: [CHALLENGE_REPOSITORY]
+    },
   ],
 })
 export class ChallengeModule {}

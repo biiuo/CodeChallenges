@@ -51,22 +51,50 @@ export class AuthController {
   @ApiBody({
     type: SignupRequest,
     examples: {
-      basic: {
-        summary: 'Ejemplo de registro',
+      student: {
+        summary: 'Registro de Estudiante',
         value: { 
-          email: 'user@example.com', 
-          password: 'Str0ngP@ss!',
-          name: 'John Doe',
-          code: 'U123456',
-          username: 'johndoe',
+          email: 'estudiante@universidad.edu',
+          password: 'Estudiante123!',
+          name: 'María García',
+          code: 'EST2025001',
+          username: 'maria.garcia',
           role: 'STUDENT'
         },
       },
+      professor: {
+        summary: 'Registro de Profesor',
+        value: { 
+          email: 'profesor@universidad.edu',
+          password: 'Profesor456!',
+          name: 'Dr. Carlos Ruiz',
+          code: 'PROF2025001',
+          username: 'carlos.ruiz',
+          role: 'PROFESSOR'
+        },
+      },
+      admin: {
+        summary: 'Registro de Administrador',
+        value: { 
+          email: 'admin@universidad.edu',
+          password: 'Admin789!',
+          name: 'Ana Pérez',
+          code: 'ADM2025001',
+          username: 'ana.perez',
+          role: 'ADMIN'
+        },
+      }
     },
   })
   @ApiCreatedResponse({
     description: 'Usuario creado y tokens firmados',
     type: AuthTokensDoc,
+    schema: {
+      example: {
+        access: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+      }
+    }
   })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
   async signup(@Body() dto: SignupRequest) {
@@ -93,13 +121,30 @@ export class AuthController {
   @ApiBody({
     type: LoginRequest,
     examples: {
-      basic: {
-        summary: 'Ejemplo de login',
-        value: { email: 'user@example.com', password: 'Str0ngP@ss!' },
+      student: {
+        summary: 'Login de Estudiante',
+        value: { email: 'estudiante@universidad.edu', password: 'Estudiante123!' },
+      },
+      professor: {
+        summary: 'Login de Profesor',
+        value: { email: 'profesor@universidad.edu', password: 'Profesor456!' },
+      },
+      admin: {
+        summary: 'Login de Administrador',
+        value: { email: 'admin@universidad.edu', password: 'Admin789!' },
       },
     },
   })
-  @ApiOkResponse({ description: 'Login exitoso', type: AuthTokensDoc })
+  @ApiOkResponse({ 
+    description: 'Login exitoso', 
+    type: AuthTokensDoc,
+    schema: {
+      example: {
+        access: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+      }
+    }
+  })
   @ApiUnauthorizedResponse({ description: 'Credenciales inválidas' })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
   async login(@Body() dto: LoginRequest) {
@@ -123,7 +168,16 @@ export class AuthController {
   // Si en tu configuración de Swagger definiste dos bearerAuth (p. ej. "access" y "refresh"),
   // puedes especificar el nombre aquí. Si no, deja el default:
   @ApiBearerAuth('refresh') // cámbialo a 'Authorization' o tu nombre de esquema si corresponde
-  @ApiOkResponse({ description: 'Tokens renovados', type: AuthTokensDoc })
+  @ApiOkResponse({ 
+    description: 'Tokens renovados', 
+    type: AuthTokensDoc,
+    schema: {
+      example: {
+        access: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+      }
+    }
+  })
   @ApiUnauthorizedResponse({ description: 'Refresh token inválido o expirado' })
   async refresh(@Req() req: any) {
     return this.signTokens(req.user.userId, req.user.role);

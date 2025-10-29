@@ -8,7 +8,7 @@ import { randomUUID } from 'crypto';
 export class CreateCourseUseCase {
   constructor(
     private readonly courseRepo: CourseRepository,
-    private readonly userRepo: UserRepository, // 👈 para buscar profesores
+    private readonly userRepo: UserRepository
   ) {}
 
   async execute(dto: CreateCourseDTO): Promise<Course> {

@@ -5,7 +5,6 @@ import { Challenge } from '../../../domain/entities/challenge.entity';
 @Injectable()
 export class FindChallengeByIdUseCase {
   constructor(
-     @Inject('IChallengeRepository')
     private readonly challengeRepo: challengeRepository.ChallengeRepository) {}
 
   async execute(id: string): Promise<Challenge> {

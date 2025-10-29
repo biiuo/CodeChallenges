@@ -7,7 +7,6 @@ import { randomUUID } from 'crypto';
 @Injectable()
 export class CreateChallengeUseCase {
   constructor(
-    @Inject('IChallengeRepository')
     private readonly challengeRepo: challengeRepository.ChallengeRepository) {}
 
   async execute(dto: CreateChallengeDto): Promise<Challenge> {

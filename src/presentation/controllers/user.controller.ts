@@ -3,11 +3,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 class UserProfileDoc {
-  id: string;
-  email: string;
-  roles: string[];
+  userId: string;
+  role: string;
 }
-
 
 @ApiTags('Users')
 @ApiBearerAuth('access')
@@ -24,6 +22,12 @@ export class UsersController {
   @ApiOkResponse({
     description: 'Perfil del usuario autenticado',
     type: UserProfileDoc,
+    schema: {
+      example: {
+        userId: 'cm123abc456def789',
+        role: 'STUDENT'
+      }
+    }
   })
   @ApiUnauthorizedResponse({
     description: 'Token inválido o no proporcionado',

@@ -5,7 +5,6 @@ import { Course } from '../../../domain/entities/course.entity';
 @Injectable()
 export class DeleteCourseUseCase {
   constructor(
-    @Inject('ICourseRepository')
     private readonly courseRepo: courseRepository.CourseRepository,
   ) {}
 
