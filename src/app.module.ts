@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 //import { CategoryModule } from './presentation/modules/category.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { CoreModule } from './module/db.module';
-import { UserModule } from './module/user.module';
-import { CourseModule } from './module/course.module';
-import { ChallengeModule} from './module/challenge.module';
-import { AuthModule } from './module/auth.module';
+import { CoreModule } from './presentation/modules/db.module';
+import { UserModule } from './presentation/modules/user.module';
+import { CourseModule } from './presentation/modules/course.module';
+import { ChallengeModule} from './presentation/modules/challenge.module';
+import { AuthModule } from './presentation/modules/auth.module';
 
 @Module({
   imports: [ 

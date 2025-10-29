@@ -53,7 +53,14 @@ export class AuthController {
     examples: {
       basic: {
         summary: 'Ejemplo de registro',
-        value: { email: 'user@example.com', password: 'Str0ngP@ss!' },
+        value: { 
+          email: 'user@example.com', 
+          password: 'Str0ngP@ss!',
+          name: 'John Doe',
+          code: 'U123456',
+          username: 'johndoe',
+          role: 'STUDENT'
+        },
       },
     },
   })
