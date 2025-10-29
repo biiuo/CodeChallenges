@@ -6,14 +6,15 @@ import { CoreModule } from './module/db.module';
 import { UserModule } from './module/user.module';
 import { CourseModule } from './module/course.module';
 import { ChallengeModule} from './module/challenge.module';
+import { AuthModule } from './module/auth.module';
 
 @Module({
   imports: [ 
     CoreModule,
     UserModule,
     CourseModule,
-    ChallengeModule
-
+    ChallengeModule,
+    AuthModule
   ],
   
   controllers: [AppController],

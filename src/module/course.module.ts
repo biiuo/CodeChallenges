@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { CoursesController } from '../presentation/controllers/course.controllers';
+import { CoursesController } from '../presentation/controllers/course.controller';
 import { PrismaService } from '../infrastructure/persistence/prisma.service';
 import { PrismaCourseRepository } from '../infrastructure/repositories/prisma-course.repository';
 import { CreateCourseUseCase } from '../application/usesCases/course/createcourse.usecase';

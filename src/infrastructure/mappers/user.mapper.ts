@@ -23,7 +23,7 @@ export class UserMapper {
       code: domainUser.code,
       username: domainUser.username,
       email: domainUser.email,
-      password: domainUser.password,
+      password: domainUser.passwordHash,
       role: EnumMapper.toPrismaRole(domainUser.role),
     } as PrismaUser;
   }
