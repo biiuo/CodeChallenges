@@ -1,16 +1,19 @@
-export enum role {
+export enum Role {
   STUDENT = 'STUDENT',
-  PROFESSOR = 'PROFESSOR',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  PROFESSOR = 'PROFESSOR'
 }
+
 export class User {
   constructor (
-    public id: number,
+    public id: string,
     public name: string,
-    public codigo: string,
+    public code: string,
     public username: string,
     public email: string,
-    public password: string,
-    public role: role,
+    private _password: string,
+    public role: Role,
   ) {}
+  get passwordHash() { return this._password; }
+  setPasswordHash(newHash: string) { this._password = newHash; }
 }

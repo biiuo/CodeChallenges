@@ -1,10 +1,10 @@
-export enum challengeStatus {
+export enum ChallengeStatus {
   DRAFT = 'DRAFT',
   PUBLISHED = 'PUBLISHED',
   ARCHIVED = 'ARCHIVED'
 }
 
-export enum difficulty {
+export enum Difficulty {
   EASY = 'EASY',
   MEDIUM = 'MEDIUM',
   HARD = 'HARD'
@@ -12,14 +12,15 @@ export enum difficulty {
 
 export class Challenge {
   constructor (
-    public id: number,
+    public id: string,
     public title: string,
     public description: string,
-    public difficulty: difficulty,
+    public difficulty: Difficulty,
     public tags: string[],
     public timeLimit: number,
     public memoryLimit: number,
-    public status: challengeStatus,
-    public authorId: number
+    public status: ChallengeStatus,
+    public isPublic: boolean,
+    public authorId: string
   ) {}
 }

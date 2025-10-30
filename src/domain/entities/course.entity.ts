@@ -1,9 +1,8 @@
 export class Course {
   constructor (
-    public id: number,
-    public nrc: string,
+    public id: string,
+    public code: string,
     public name: string,
-    public period: string,
-    public group: string
+    public period: string
   ) {}
 }

@@ -1,18 +1,16 @@
+// ===================================================
+// GENERADOR Y FUENTE DE DATOS
+// ===================================================
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-// ===================================================
-// Generador y fuente de datos
-// ===================================================
-
-
 
 // ===================================================
 // ENUMERACIONES: Roles, Estados, Dificultades
@@ -39,7 +37,8 @@ enum SubmissionStatus {
   RUNTIME_ERROR        // Error en ejecución
   COMPILATION_ERROR    // Error de compilación
 }
-enum Difficulty{
+
+enum Difficulty {
   EASY 
   MEDIUM
   HARD
@@ -52,20 +51,21 @@ enum Difficulty{
 /// Tabla de usuarios del sistema.
 /// Se puede buscar tanto por `username` como por `codigo` (ambos únicos).
 model User {
-  id        Int      @id @default(autoincrement())  // PK
-  codigo    String   @unique                        // Código institucional o identificador interno
+  id        String   @id @default(uuid())           // PK
+  code      String   @unique                        // Código institucional o identificador interno
   username  String   @unique                        // Nombre de usuario único
   email     String   @unique                        // Correo único
-  password  String                                 // Contraseña cifrada
-  name      String                               // Nombre opcional
-  role      Role     @default(STUDENT)             // Rol del usuario
+  password  String                                  // Contraseña cifrada
+  name      String                                  // Nombre del usuario
+  role      Role     @default(STUDENT)              // Rol del usuario
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relaciones:
-  courses   Course[]       @relation("CourseProfessor") // Cursos creados como profesor
-  courseEnrollments CourseStudent[] // Cursos inscritos como estudiante
-  submissions       Submission[]    // Submissions hechos por el usuario
+  courses            Course[]        @relation("CourseProfessor")
+  courseEnrollments  CourseStudent[]                             
+  submissions        Submission[]
+  authoredChallenges Challenge[]                   
 }
 
 // ===================================================
@@ -73,35 +73,34 @@ model User {
 /// Representa un curso o grupo académico.
 /// Un curso tiene un código, un nombre, un periodo y un grupo.
 model Course {
-  id        Int      @id @default(autoincrement())  // PK
-  nrc  String  @unique                        // Código único del curso (ej: NRC o identificador)
-  name      String                                // Nombre del curso
-  period    String                                // Ej: "2025-1"
-  group     String                              // Ej: "1" o "A"
+  id        String   @id @default(uuid())           // PK
+  code      String   @unique                        // Código único del curso (ej: NRC o identificador)
+  name      String                                  // Nombre del curso
+  period    String                                  // Ej: "2025-1"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relaciones:
-  professors  User[]          @relation("CourseProfessor") // Profesores asignados (N:M)
-  students    CourseStudent[]  // Estudiantes inscritos (N:M)
-  challenges  Challenge[]      // Retos asociados al curso (1:N)
-  evaluations Evaluation[]     // Evaluaciones o parciales (1:N)
+  professors  User[]           @relation("CourseProfessor")   // Profesores asignados (N:M)
+  students    CourseStudent[]                                 // Estudiantes inscritos (N:M)
+  challenges  Challenge[]      @relation("CourseChallenges")  // Retos asociados al curso (1:N)
+  evaluations Evaluation[]                                    // Relación con evaluaciones
+  submissions Submission[]
 }
 
 // ===================================================
 
 /// Relación N:M entre usuarios y cursos (como estudiantes)
 model CourseStudent {
-  id         Int      @id @default(autoincrement()) // PK
-  userId     Int                                    // FK → User.id
-  courseId   Int                                    // FK → Course.id
-  enrolledAt DateTime @default(now())              // Fecha de inscripción
+  userId     String                                 // FK → User.id
+  courseId   String                                 // FK → Course.id
+  enrolledAt DateTime @default(now())               // Fecha de inscripción
 
   // Relaciones:
   user   User   @relation(fields: [userId], references: [id])
   course Course @relation(fields: [courseId], references: [id])
 
-  @@unique([userId, courseId]) // Evita duplicados en la inscripción
+  @@id([userId, courseId]) // PK compuesta
 }
 
 // ===================================================
@@ -109,22 +108,25 @@ model CourseStudent {
 /// Reto algorítmico asociado a un curso.
 /// Incluye su dificultad, límites y estado (borrador, publicado o archivado).
 model Challenge {
-  id          Int             @id @default(autoincrement()) // PK
-  title       String
+  id          String          @id @default(cuid())
+  title       String          @unique()
   description String
-  difficulty  Difficulty  @default(null)                   // Easy, Medium o Hard
-  tags        String[]                                 // Etiquetas temáticas (ej: ["arrays", "dp"])
-  timeLimit   Int                                      // Tiempo límite en milisegundos
-  memoryLimit Int                                      // Límite de memoria (MB)
+  difficulty  Difficulty      @default(EASY)                           
+  tags        String[]                             // Etiquetas temáticas (ej: ["arrays", "dp"])
+  timeLimit   Int                                  // Tiempo límite en milisegundos
+  memoryLimit Int                                  // Límite de memoria (MB)
   status      ChallengeStatus @default(DRAFT)
+  isPublic    Boolean         @default(false)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   // Relaciones:
-  courseId  Int
-  course    Course   @relation(fields: [courseId], references: [id]) // Un reto pertenece a un curso
-  testcases Testcase[]   // Casos de prueba asociados (1:N)
-  submissions Submission[] // Envíos asociados (1:N)
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id])
+  courses     Course[]      @relation("CourseChallenges")
+  testcases   Testcase[]    
+  submissions Submission[]
+  evaluationChallenges EvaluationChallenge[]
 }
 
 // ===================================================
@@ -132,65 +134,73 @@ model Challenge {
 /// Caso de prueba de un reto (input y output esperados).
 /// Algunos casos pueden ser ocultos (visible = false) para los estudiantes.
 model Testcase {
-  id          Int      @id @default(autoincrement()) // PK
-  input       String                               // Datos de entrada
-  output      String                               // Salida esperada
-  visible     Boolean  @default(false)             // Indica si el caso es visible
-  challengeId Int                                  // FK → Challenge.id
+  challengeId String                                  // FK → Challenge.id
+  caseNumber  Int                                     // Secuencia dentro de cada problema
+  input       String                                  // Datos de entrada
+  output      String                                  // Salida
+  visible     Boolean   @default(false)               // Indica si el caso es visible
+
   challenge   Challenge @relation(fields: [challengeId], references: [id])
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
+
+  @@id([challengeId, caseNumber])
 }
 
 // ===================================================
 
 /// Envío (submission) de un estudiante para un reto.
 /// Guarda el código, lenguaje, estado y puntaje final.
-/*
 model Submission {
-  id           Int              @id @default(autoincrement()) // PK
-  language     String                                   // Lenguaje (ej: python, cpp)
-  code         String                                   // Código fuente enviado
-  status       SubmissionStatus @default(QUEUED)        // Estado del envío
-  score        Int?                                     // Puntuación (0-100)
-  timeMsTotal  Int?                                     // Tiempo total de ejecución
-  createdAt    DateTime @default(now())
+  id               Int                @id @default(autoincrement())
+  submissionNumber Int
+  language         String
+  code             String
+  status           SubmissionStatus   @default(QUEUED)
+  score            Int?
+  timeMsTotal      Int?
+  createdAt        DateTime           @default(now())
+
+  // Campos de contexto
+  userId          String
+  challengeId     String
+  courseId        String?
+  evaluationId    Int?
 
   // Relaciones:
-  userId       Int
-  challengeId  Int
-  user         User      @relation(fields: [userId], references: [id]) // El usuario que envió
-  challenge    Challenge @relation(fields: [challengeId], references: [id]) // El reto asociado
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge       Challenge     @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  course          Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  evaluation      Evaluation?   @relation(fields: [evaluationId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, challengeId, courseId, evaluationId, submissionNumber])
 }
 
 // ===================================================
 
-/// Evaluaciones o parciales.
-/// Agrupan varios retos bajo una fecha, duración y curso.
 model Evaluation {
-  id          Int      @id @default(autoincrement()) // PK
-  name        String                                // Ej: "Parcial 1"
-  date        DateTime                              // Fecha de realización
-  durationMin Int                                   // Duración en minutos
-  createdAt   DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  evaluationNumber  Int
+  name              String
+  description       String
+  date              DateTime
+  maxDuration       Int
+  createdAt         DateTime @default(now())
 
   // Relaciones:
-  courseId   Int
-  course     Course @relation(fields: [courseId], references: [id]) // Evaluación pertenece a un curso
-  challenges EvaluationChallenge[] // Relación N:M con retos
+  courseId    String
+  course      Course @relation(fields: [courseId], references: [id])
+  challenges  EvaluationChallenge[]
+  submissions Submission[]
+
+  @@unique([courseId, evaluationNumber])
 }
 
-// ===================================================
-
-/// Relación N:M entre evaluaciones y retos
 model EvaluationChallenge {
-  id           Int      @id @default(autoincrement()) // PK
-  evaluationId Int                                    // FK → Evaluation.id
-  challengeId  Int                                    // FK → Challenge.id
+  evaluationId Int
+  challengeId  String
 
-  // Relaciones:
   evaluation Evaluation @relation(fields: [evaluationId], references: [id])
   challenge  Challenge  @relation(fields: [challengeId], references: [id])
 
-  @@unique([evaluationId, challengeId]) // Evita duplicados en la relación
+  @@unique([evaluationId, challengeId])
 }
-*/
