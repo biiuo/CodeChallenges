@@ -1,11 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
-import * as courseRepository from '../../../domain/repositories/course.repository';
+import { CourseRepository } from '../../../domain/repositories/course.repository';
 import { Course } from '../../../domain/entities/course.entity';
 
-@Injectable()
 export class FindAllCoursesUseCase {
   constructor(
-    private readonly courseRepo: courseRepository.CourseRepository,
+    private readonly courseRepo: CourseRepository,
   ) {}
 
   async execute(): Promise<Course[]> {

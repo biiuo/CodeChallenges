@@ -22,6 +22,7 @@ import {
   ApiNotFoundResponse,
   ApiForbiddenResponse,
   ApiUnauthorizedResponse,
+  ApiConflictResponse,
 } from '@nestjs/swagger';
 import { CreateChallengeDto } from '../../application/dtos/challenges';
 import { UpdateChallengeDto } from '../../application/dtos/challenges';
@@ -90,7 +91,7 @@ export class ChallengesController {
     description: 'Reto creado exitosamente',
     schema: {
       example: {
-        id: '00001111-2222-3333-4444-555566667777',
+        id: 'CH-ABCDE',
         title: 'Two Sum',
         description: 'Given an array of integers nums and an integer target...',
         difficulty: 'EASY',
@@ -106,6 +107,16 @@ export class ChallengesController {
     }
   })
   @ApiForbiddenResponse({ description: 'Sin permisos. Solo ADMIN y PROFESSOR pueden crear retos.' })
+  @ApiConflictResponse({ 
+    description: 'Título duplicado. Ya existe un reto con este título.',
+    schema: {
+      example: {
+        statusCode: 409,
+        message: "Challenge with title 'Two Sum' already exists. Please choose a different title.",
+        error: 'Conflict'
+      }
+    }
+  })
   async create(@Body() data: CreateChallengeDto) {
     return await this.createChallengeUseCase.execute(data);
   }
@@ -120,7 +131,7 @@ export class ChallengesController {
     schema: {
       example: [
         {
-          id: '00001111-2222-3333-4444-555566667777',
+          id: 'CH-ABCDE',
           title: 'Two Sum',
           description: 'Given an array of integers nums and an integer target...',
           difficulty: 'EASY',
@@ -134,7 +145,7 @@ export class ChallengesController {
           updatedAt: '2025-10-29T10:30:00.000Z'
         },
         {
-          id: '00001111-2222-3333-4444-555566667777',
+          id: 'CH-FGHIJ',
           title: 'Fibonacci Sequence',
           description: 'Write a function to calculate the nth Fibonacci number.',
           difficulty: 'MEDIUM',
@@ -168,7 +179,7 @@ export class ChallengesController {
     description: 'Reto encontrado exitosamente',
     schema: {
       example: {
-        id: '00001111-2222-3333-4444-555566667777',
+        id: 'CH-ABCDE',
         title: 'Two Sum',
         description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
         difficulty: 'EASY',
@@ -232,7 +243,7 @@ export class ChallengesController {
     description: 'Reto actualizado exitosamente',
     schema: {
       example: {
-        id: '00001111-2222-3333-4444-555566667777',
+        id: 'CH-ABCDE',
         title: 'Two Sum - Updated',
         description: 'Updated description: Given an array of integers nums and an integer target...',
         difficulty: 'EASY',
@@ -249,6 +260,16 @@ export class ChallengesController {
   })
   @ApiNotFoundResponse({ description: 'Reto no encontrado' })
   @ApiForbiddenResponse({ description: 'Sin permisos. Solo ADMIN y PROFESSOR pueden actualizar retos.' })
+  @ApiConflictResponse({ 
+    description: 'Título duplicado. Ya existe otro reto con este título.',
+    schema: {
+      example: {
+        statusCode: 409,
+        message: "Challenge with title 'Two Sum' already exists. Please choose a different title.",
+        error: 'Conflict'
+      }
+    }
+  })
   async update(
     @Param('id') id: string,
     @Body() data: UpdateChallengeDto,
@@ -266,14 +287,14 @@ export class ChallengesController {
   @ApiParam({
     name: 'id',
     description: 'ID único del reto a eliminar',
-    example: '00001111-2222-3333-4444-555566667777',
+    example: 'CH-ABCDE',
   })
   @ApiOkResponse({ 
     description: 'Reto eliminado exitosamente',
     schema: {
       example: {
         message: 'Challenge deleted successfully',
-        id: '00001111-2222-3333-4444-555566667777',
+        id: 'CH-ABCDE',
       }
     }
   })

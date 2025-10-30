@@ -1,11 +1,10 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { Course } from '../../../domain/entities/course.entity';
-import * as courseRepository from '../../../domain/repositories/course.repository';
+import { CourseRepository } from '../../../domain/repositories/course.repository';
 
-@Injectable()
 export class FindCourseByCodeUseCase {
   constructor(
-    private readonly courseRepo: courseRepository.CourseRepository,
+    private readonly courseRepo: CourseRepository,
   ) {}
 
   async execute(code: string): Promise<Course> {

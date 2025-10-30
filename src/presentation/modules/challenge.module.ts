@@ -47,11 +47,6 @@ const usePrisma = !!process.env.DATABASE_URL;
       useFactory: (repo: any) => new UpdateChallengeUseCase(repo),
       inject: [CHALLENGE_REPOSITORY]
     },
-    {
-      provide: FindAllChallengesUseCase,
-      useFactory: (repo: any) => new FindAllChallengesUseCase(repo),
-      inject: [CHALLENGE_REPOSITORY]
-    },
   ],
 })
 export class ChallengeModule {}

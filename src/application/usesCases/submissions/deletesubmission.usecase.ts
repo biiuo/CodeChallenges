@@ -1,9 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import * as submissionRepository from '../../../domain/repositories/submission.repository';
+import { NotFoundException } from '@nestjs/common';
+import { SubmissionRepository } from '../../../domain/repositories/submission.repository';
 
-@Injectable()
 export class DeleteSubmissionUseCase {
-  constructor(private readonly submissionRepo: submissionRepository.SubmissionRepository) {}
+  constructor(private readonly submissionRepo: SubmissionRepository) {}
 
   async execute(id: number): Promise<void> {
     const existing = await this.submissionRepo.findById(id);

@@ -109,7 +109,7 @@ model CourseStudent {
 /// Incluye su dificultad, límites y estado (borrador, publicado o archivado).
 model Challenge {
   id          String          @id @default(cuid())
-  title       String
+  title       String          @unique()
   description String
   difficulty  Difficulty      @default(EASY)                           
   tags        String[]                             // Etiquetas temáticas (ej: ["arrays", "dp"])

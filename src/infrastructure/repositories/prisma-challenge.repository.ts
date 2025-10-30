@@ -10,6 +10,7 @@ export class PrismaChallengeRepository implements ChallengeRepository {
   async create(data: Partial<Challenge>): Promise<Challenge> {
     const created = await this.prisma.challenge.create({
       data: {
+        id: data.id!,
         title: data.title!,
         description: data.description!,
         difficulty: data.difficulty ?? undefined,
@@ -31,6 +32,11 @@ export class PrismaChallengeRepository implements ChallengeRepository {
 
   async findById(id: string): Promise<Challenge | null> {
     const found = await this.prisma.challenge.findUnique({ where: { id } });
+    return found ? this.toDomain(found) : null;
+  }
+
+  async findByTitle(title: string): Promise<Challenge | null> {
+    const found = await this.prisma.challenge.findFirst({ where: { title } });
     return found ? this.toDomain(found) : null;
   }
 

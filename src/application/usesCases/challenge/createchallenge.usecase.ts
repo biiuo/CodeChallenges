@@ -1,18 +1,22 @@
-import { Injectable,Inject } from '@nestjs/common';
-import * as challengeRepository from '../../../domain/repositories/challenge.repository';
-import { Challenge,ChallengeStatus } from '../../../domain/entities/challenge.entity';
-import {CreateChallengeDto } from '../../dtos/challenges';
-import { randomUUID } from 'crypto';
+import { ChallengeRepository } from '../../../domain/repositories/challenge.repository';
+import { Challenge, ChallengeStatus } from '../../../domain/entities/challenge.entity';
+import { CreateChallengeDto } from '../../dtos/challenges';
+import { ChallengeTitleAlreadyExistsException } from '../../exceptions/challenge.exceptions';
 
-@Injectable()
 export class CreateChallengeUseCase {
   constructor(
-    private readonly challengeRepo: challengeRepository.ChallengeRepository) {}
+    private readonly challengeRepo: ChallengeRepository) {}
 
   async execute(dto: CreateChallengeDto): Promise<Challenge> {
-    // Validaciones (comentadas) -> ej: comprobar difficulty, limits, tags length
+    // Check if challenge with same title already exists (globally unique)
+    const existingChallenge = await this.challengeRepo.findByTitle(dto.title);
+    if (existingChallenge) {
+      throw new ChallengeTitleAlreadyExistsException(dto.title);
+    }
+
+    // Validations passed, create the challenge
     const challenge = new Challenge(
-      randomUUID(),
+      this.generateChallengeId(),
       dto.title,
       dto.description,
       dto.difficulty as any,
@@ -25,5 +29,15 @@ export class CreateChallengeUseCase {
     );
 
     return this.challengeRepo.create(challenge);
+  }
+
+  generateChallengeId(length: number = 5): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = 'CH-';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    console.log('challenge id: '+ result);
+    return result;
   }
 }
