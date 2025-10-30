@@ -24,7 +24,7 @@ export class UsersController {
     type: UserProfileDoc,
     schema: {
       example: {
-        userId: 'cm123abc456def789',
+        userId: '00001111-2222-3333-4444-555566667777',
         role: 'STUDENT'
       }
     }

@@ -67,7 +67,7 @@ export class ChallengesController {
           tags: ['arrays', 'hash-table'],
           timeLimit: 1000,
           memoryLimit: 128,
-          authorId: 'cm123abc456def789',
+          authorId: '00001111-2222-3333-4444-555566667777',
           isPublic: true
         }
       },
@@ -80,7 +80,7 @@ export class ChallengesController {
           tags: ['dynamic-programming', 'recursion'],
           timeLimit: 2000,
           memoryLimit: 256,
-          authorId: 'cm123abc456def789',
+          authorId: '00001111-2222-3333-4444-555566667777',
           isPublic: false
         }
       }
@@ -90,7 +90,7 @@ export class ChallengesController {
     description: 'Reto creado exitosamente',
     schema: {
       example: {
-        id: 'cm2abc123def456',
+        id: '00001111-2222-3333-4444-555566667777',
         title: 'Two Sum',
         description: 'Given an array of integers nums and an integer target...',
         difficulty: 'EASY',
@@ -99,7 +99,7 @@ export class ChallengesController {
         memoryLimit: 128,
         status: 'DRAFT',
         isPublic: true,
-        authorId: 'cm123abc456def789',
+        authorId: '00001111-2222-3333-4444-555566667777',
         createdAt: '2025-10-29T10:30:00.000Z',
         updatedAt: '2025-10-29T10:30:00.000Z'
       }
@@ -120,7 +120,7 @@ export class ChallengesController {
     schema: {
       example: [
         {
-          id: 'cm2abc123def456',
+          id: '00001111-2222-3333-4444-555566667777',
           title: 'Two Sum',
           description: 'Given an array of integers nums and an integer target...',
           difficulty: 'EASY',
@@ -129,12 +129,12 @@ export class ChallengesController {
           memoryLimit: 128,
           status: 'PUBLISHED',
           isPublic: true,
-          authorId: 'cm123abc456def789',
+          authorId: '00001111-2222-3333-4444-555566667777',
           createdAt: '2025-10-29T10:30:00.000Z',
           updatedAt: '2025-10-29T10:30:00.000Z'
         },
         {
-          id: 'cm2def456ghi789',
+          id: '00001111-2222-3333-4444-555566667777',
           title: 'Fibonacci Sequence',
           description: 'Write a function to calculate the nth Fibonacci number.',
           difficulty: 'MEDIUM',
@@ -143,7 +143,7 @@ export class ChallengesController {
           memoryLimit: 256,
           status: 'PUBLISHED',
           isPublic: false,
-          authorId: 'cm123abc456def789',
+          authorId: '00001111-2222-3333-4444-555566667777',
           createdAt: '2025-10-29T11:00:00.000Z',
           updatedAt: '2025-10-29T11:00:00.000Z'
         }
@@ -162,13 +162,13 @@ export class ChallengesController {
   @ApiParam({
     name: 'id',
     description: 'ID único del reto',
-    example: 'cm2abc123def456'
+    example: '00001111-2222-3333-4444-555566667777',
   })
   @ApiOkResponse({ 
     description: 'Reto encontrado exitosamente',
     schema: {
       example: {
-        id: 'cm2abc123def456',
+        id: '00001111-2222-3333-4444-555566667777',
         title: 'Two Sum',
         description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
         difficulty: 'EASY',
@@ -177,7 +177,7 @@ export class ChallengesController {
         memoryLimit: 128,
         status: 'PUBLISHED',
         isPublic: true,
-        authorId: 'cm123abc456def789',
+        authorId: '00001111-2222-3333-4444-555566667777',
         createdAt: '2025-10-29T10:30:00.000Z',
         updatedAt: '2025-10-29T10:30:00.000Z'
       }
@@ -198,7 +198,7 @@ export class ChallengesController {
   @ApiParam({
     name: 'id',
     description: 'ID único del reto a actualizar',
-    example: 'cm2abc123def456'
+    example: '00001111-2222-3333-4444-555566667777',
   })
   @ApiBody({
     type: UpdateChallengeDto,
@@ -232,7 +232,7 @@ export class ChallengesController {
     description: 'Reto actualizado exitosamente',
     schema: {
       example: {
-        id: 'cm2abc123def456',
+        id: '00001111-2222-3333-4444-555566667777',
         title: 'Two Sum - Updated',
         description: 'Updated description: Given an array of integers nums and an integer target...',
         difficulty: 'EASY',
@@ -241,7 +241,7 @@ export class ChallengesController {
         memoryLimit: 256,
         status: 'PUBLISHED',
         isPublic: true,
-        authorId: 'cm123abc456def789',
+        authorId: '00001111-2222-3333-4444-555566667777',
         createdAt: '2025-10-29T10:30:00.000Z',
         updatedAt: '2025-10-29T12:00:00.000Z'
       }
@@ -266,14 +266,14 @@ export class ChallengesController {
   @ApiParam({
     name: 'id',
     description: 'ID único del reto a eliminar',
-    example: 'cm2abc123def456'
+    example: '00001111-2222-3333-4444-555566667777',
   })
   @ApiOkResponse({ 
     description: 'Reto eliminado exitosamente',
     schema: {
       example: {
         message: 'Challenge deleted successfully',
-        id: 'cm2abc123def456'
+        id: '00001111-2222-3333-4444-555566667777',
       }
     }
   })

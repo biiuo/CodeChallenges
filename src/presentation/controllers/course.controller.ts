@@ -82,7 +82,7 @@ export class CoursesController {
     description: 'Curso creado exitosamente',
     schema: {
       example: {
-        id: 'cm123abc456def789',
+        id: '00001111-2222-3333-4444-555566667777',
         code: 'PROG101',
         name: 'Introducción a la Programación',
         period: '2025-1',
@@ -116,7 +116,7 @@ export class CoursesController {
     schema: {
       example: [
         {
-          id: 'cm123abc456def789',
+          id: '00001111-2222-3333-4444-555566667777',
           code: 'PROG101',
           name: 'Introducción a la Programación',
           period: '2025-1',
@@ -124,7 +124,7 @@ export class CoursesController {
           updatedAt: '2025-10-29T10:30:00.000Z'
         },
         {
-          id: 'cm456def789ghi012',
+          id: '00001111-2222-3333-4444-555566667777',
           code: 'ALG301',
           name: 'Algoritmos y Estructuras de Datos',
           period: '2025-1',
@@ -132,7 +132,7 @@ export class CoursesController {
           updatedAt: '2025-10-29T11:00:00.000Z'
         },
         {
-          id: 'cm789ghi012jkl345',
+          id: '00001111-2222-3333-4444-555566667777',
           code: 'WEB201',
           name: 'Desarrollo Web Full Stack',
           period: '2025-2',
@@ -160,7 +160,7 @@ export class CoursesController {
     description: 'Curso encontrado exitosamente',
     schema: {
       example: {
-        id: 'cm123abc456def789',
+        id: '00001111-2222-3333-4444-555566667777',
         code: 'PROG101',
         name: 'Introducción a la Programación',
         period: '2025-1',
@@ -221,7 +221,7 @@ export class CoursesController {
     description: 'Curso actualizado exitosamente',
     schema: {
       example: {
-        id: 'cm123abc456def789',
+        id: '00001111-2222-3333-4444-555566667777',
         code: 'PROG101',
         name: 'Introducción a la Programación - Actualizado',
         period: '2025-1',
