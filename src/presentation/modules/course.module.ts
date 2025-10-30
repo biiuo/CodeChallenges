@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common';
 import { CoursesController } from '../controllers/course.controller';
 import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import { PrismaCourseRepository } from '../../infrastructure/repositories/prisma-course.repository';
+import { PrismaUserRepository } from '../../infrastructure/repositories/prisma-user.repository';
 import { CreateCourseUseCase } from '../../application/usesCases/course/createcourse.usecase';
 import { FindCourseByCodeUseCase } from '../../application/usesCases/course/findcourse.usecase';
 import { FindAllCoursesUseCase } from '../../application/usesCases/course/findallcourse.usecase';
 import { UpdateCourseUseCase } from '../../application/usesCases/course/updatecourse.usecase';
 import { DeleteCourseUseCase } from '../../application/usesCases/course/deletecourse.usecase';
 import { COURSE_REPOSITORY, USER_REPOSITORY } from 'src/application/tokens';
+import { RolesGuard } from '../guards/roles.guard';
 
 const usePrisma = !!process.env.DATABASE_URL;
 
@@ -19,6 +21,13 @@ const usePrisma = !!process.env.DATABASE_URL;
       provide: COURSE_REPOSITORY,
       useFactory: (prisma?: PrismaService) => {
         return new PrismaCourseRepository(prisma!);
+      },
+      inject: usePrisma ? [PrismaService] : [],
+    },
+    {
+      provide: USER_REPOSITORY,
+      useFactory: (prisma?: PrismaService) => {
+        return new PrismaUserRepository(prisma!);
       },
       inject: usePrisma ? [PrismaService] : [],
     },
@@ -47,11 +56,7 @@ const usePrisma = !!process.env.DATABASE_URL;
       useFactory: (repo: any) => new UpdateCourseUseCase(repo),
       inject: [COURSE_REPOSITORY]
     },
-    {
-      provide: FindAllCoursesUseCase,
-      useFactory: (repo: any) => new FindAllCoursesUseCase(repo),
-      inject: [COURSE_REPOSITORY]
-    },
+    RolesGuard,
   ],
 })
 export class CourseModule {}

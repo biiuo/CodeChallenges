@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Put, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Put, Delete, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -12,6 +12,7 @@ import {
   ApiNotFoundResponse,
   ApiForbiddenResponse,
   ApiUnauthorizedResponse,
+  ApiConflictResponse,
 } from '@nestjs/swagger';
 import { CreateCourseUseCase } from '../../application/usesCases/course/createcourse.usecase';
 import { FindCourseByCodeUseCase } from '../../application/usesCases/course/findcourse.usecase';
@@ -40,6 +41,7 @@ export class CoursesController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN, Role.PROFESSOR)
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   @ApiOperation({ 
     summary: 'Crear un nuevo curso',
     description: 'Crea un nuevo curso académico. Solo disponible para ADMIN y PROFESSOR.'
@@ -52,7 +54,8 @@ export class CoursesController {
         value: {
           code: 'PROG101',
           name: 'Introducción a la Programación',
-          period: '2025-1'
+          period: '2025-1',
+          professorCode: ['PROF2025001']
         }
       },
       algorithmsCourse: {
@@ -60,7 +63,8 @@ export class CoursesController {
         value: {
           code: 'ALG301',
           name: 'Algoritmos y Estructuras de Datos',
-          period: '2025-1'
+          period: '2025-1',
+          professorCode: ['PROF2025001']
         }
       },
       webDevCourse: {
@@ -68,7 +72,8 @@ export class CoursesController {
         value: {
           code: 'WEB201',
           name: 'Desarrollo Web Full Stack',
-          period: '2025-2'
+          period: '2025-2',
+          professorCode: ['PROF2025001']
         }
       }
     }
@@ -87,6 +92,16 @@ export class CoursesController {
     }
   })
   @ApiForbiddenResponse({ description: 'Sin permisos. Solo ADMIN y PROFESSOR pueden crear cursos.' })
+  @ApiConflictResponse({ 
+    description: 'El curso ya existe',
+    schema: {
+      example: {
+        message: "Course with code 'PROG101' already exists",
+        error: 'Conflict',
+        statusCode: 409
+      }
+    }
+  })
   async create(@Body() dto: CreateCourseDTO) {
     return this.createCourse.execute(dto);
   }

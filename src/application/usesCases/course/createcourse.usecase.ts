@@ -3,6 +3,7 @@ import { CourseRepository } from '../../../domain/repositories/course.repository
 import { UserRepository } from '../../../domain/repositories/user.repository';
 import { Course } from '../../../domain/entities/course.entity';
 import { CreateCourseDTO } from '../../dtos/course';
+import { CourseAlreadyExistsException, InvalidProfessorsException } from '../../exceptions/course.exceptions';
 import { randomUUID } from 'crypto';
 
 export class CreateCourseUseCase {
@@ -12,11 +13,11 @@ export class CreateCourseUseCase {
   ) {}
 
   async execute(dto: CreateCourseDTO): Promise<Course> {
-    // 1️⃣ Validar si ya existe curso con ese code
+    // Validar si ya existe curso con ese code
     const existing = await this.courseRepo.findByCode(dto.code);
-    if (existing) throw new Error('Course already exists');
+    if (existing) throw new CourseAlreadyExistsException(dto.code);
 
-    // 2️⃣ Si hay profesores, buscarlos
+    // Si hay profesores, buscarlos
     let professorIds: string[] = [];
     if (dto.professorCode && dto.professorCode.length > 0) {
       const professors = await Promise.all(
@@ -27,14 +28,14 @@ export class CreateCourseUseCase {
         .map((p) => (p as any).id);
 
       if (professorIds.length === 0) {
-        throw new Error('No valid professors found');
+        throw new InvalidProfessorsException();
       }
     }
 
-    // 3️⃣ Crear la entidad del dominio
+    // Crear la entidad del dominio
     const course = new Course(randomUUID(), dto.code, dto.name, dto.period);
 
-    // 4️⃣ Guardar el curso y asociar profesores
+    // Guardar el curso y asociar profesores
     const createdCourse = await this.courseRepo.createWithProfessors(course, professorIds);
     return createdCourse;
   }

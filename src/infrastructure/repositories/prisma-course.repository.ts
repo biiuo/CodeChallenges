@@ -41,7 +41,7 @@ export class PrismaCourseRepository implements CourseRepository {
   }
 
  async findByCode(code: string): Promise<Course | null> {
-    const course = await this.prisma.course.findUnique({ where: { code } });
+    const course = await this.prisma.course.findUnique({ where: { code: code } });
     return course ? (course as unknown as Course) : null;
   }
 
