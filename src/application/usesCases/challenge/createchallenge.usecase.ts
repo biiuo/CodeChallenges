@@ -2,8 +2,11 @@ import { ChallengeRepository } from '../../../domain/repositories/challenge.repo
 import { Challenge, ChallengeStatus } from '../../../domain/entities/challenge.entity';
 import { CreateChallengeDto } from '../../dtos/challenges';
 import { ChallengeTitleAlreadyExistsException } from '../../exceptions/challenge.exceptions';
+import { Logger } from '@nestjs/common';
 
 export class CreateChallengeUseCase {
+  private readonly logger = new Logger(CreateChallengeUseCase.name);
+
   constructor(
     private readonly challengeRepo: ChallengeRepository) {}
 
@@ -37,7 +40,7 @@ export class CreateChallengeUseCase {
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    console.log('challenge id: '+ result);
+    this.logger.debug(`Generated challenge id: ${result}`);
     return result;
   }
 }
