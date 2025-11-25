@@ -51,6 +51,9 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 
+# Make the docker entrypoint executable (will run prisma generate + migrate)
+RUN if [ -f ./docker/entrypoint.sh ]; then chmod +x ./docker/entrypoint.sh; fi
+
 EXPOSE 3000
 
 CMD ["npm", "run", "start:dev"]

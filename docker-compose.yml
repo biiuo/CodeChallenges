@@ -38,7 +38,8 @@ services:
     volumes:
       - ./src:/app/src  # Mount the source code
       - /app/node_modules  # Ensure node_modules is accessible
-    command: npm run start:dev  # Use the development command
+    entrypoint: ["/app/docker/entrypoint.sh"]
+    command: ["npm", "run", "start:dev"]  # Use the development command
 
   redis:
     image: redis:7-alpine
@@ -59,6 +60,35 @@ services:
       - REDIS_HOSTS=local:redis:6379:0:redispass
     ports:
       - "8081:8081"
+
+  # Runner images for code execution (built but not run as services)
+  runner-python:
+    build:
+      context: ./runners/runner-python
+      dockerfile: Dockerfile
+    image: runner-python:latest
+    profiles: ["build-only"]
+
+  runner-node:
+    build:
+      context: ./runners/runner-node
+      dockerfile: Dockerfile
+    image: runner-node:latest
+    profiles: ["build-only"]
+
+  runner-cpp:
+    build:
+      context: ./runners/runner-cpp
+      dockerfile: Dockerfile
+    image: runner-cpp:latest
+    profiles: ["build-only"]
+
+  runner-java:
+    build:
+      context: ./runners/runner-java
+      dockerfile: Dockerfile
+    image: runner-java:latest
+    profiles: ["build-only"]
 
 volumes:
   db_data:
