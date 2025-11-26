@@ -21,12 +21,26 @@ export interface RunResult {
 }
 
 export interface TestCaseResult {
-  caseId: number;
+  caseNumber: number;
   status: 'OK' | 'WA' | 'TLE' | 'RE' | 'CE';
   expectedOutput: string;
   actualOutput: string;
   stderr: string;
-  timeMsElapsed: number;
+  timeMs: number;
+  input: string;
+  errorMsg?: string;
+  passed: boolean;
+}
+
+export interface ExecutionResult {
+  status: 'ACCEPTED' | 'WRONG_ANSWER' | 'TIME_LIMIT_EXCEEDED' | 'RUNTIME_ERROR' | 'COMPILATION_ERROR';
+  score: number;
+  timeMsTotal: number;
+  totalCases: number;
+  passedCases: number;
+  failedCases: number;
+  testResults: TestCaseResult[];
+  message?: string;
 }
 
 @Injectable()
@@ -39,17 +53,158 @@ export class RunnerService {
     [ProgrammingLanguage.JAVA]: 'runner-java:latest',
   };
 
-  private readonly timeoutMs = 5000; // 5s per case
+  private readonly timeoutMs = 5000;
   private readonly cpuLimit = '0.5';
   private readonly memoryLimit = '512m';
 
   /**
-   * Executes code in an isolated Docker container with strict resource limits.
-   * @param language Programming language
-   * @param code Source code to execute
-   * @param input Standard input
-   * @param timeLimit Time limit in milliseconds
-   * @returns Execution result
+   * Executes code against multiple test cases and returns detailed results
+   */
+  async executeAgainstTestCases(
+    language: ProgrammingLanguage,
+    code: string,
+    testCases: Array<{ caseNumber: number; input: string; output: string }>,
+    timeLimit: number = 1500,
+  ): Promise<ExecutionResult> {
+    const testResults: TestCaseResult[] = [];
+    let totalTimeMs = 0;
+
+    this.logger.log(`🧪 Executing ${testCases.length} test cases for ${language}`);
+
+    for (let i = 0; i < testCases.length; i++) {
+      const testCase = testCases[i];
+      
+      this.logger.log(`\n📋 Test Case ${testCase.caseNumber}/${testCases.length}`);
+
+      const runResult = await this.executeCode(
+        language,
+        code,
+        testCase.input,
+        timeLimit,
+      );
+
+      const status = this.compareOutputs(runResult, testCase.output, timeLimit);
+      const passed = status === 'OK';
+      const errorMsg = this.getErrorMessage(status, runResult);
+
+      const testCaseResult: TestCaseResult = {
+        caseNumber: testCase.caseNumber,
+        status,
+        expectedOutput: testCase.output,
+        actualOutput: runResult.output,
+        stderr: runResult.stderr,
+        timeMs: runResult.timeMsElapsed,
+        input: testCase.input,
+        passed,
+        errorMsg
+      };
+
+      testResults.push(testCaseResult);
+      totalTimeMs += runResult.timeMsElapsed;
+
+      this.logTestCaseResult(testCaseResult, testCases.length);
+    }
+
+    return this.calculateFinalResult(testResults, totalTimeMs);
+  }
+
+  /**
+   * Log detailed test case result
+   */
+  private logTestCaseResult(result: TestCaseResult, totalCases: number): void {
+    const statusIcons = {
+      'OK': '✅',
+      'WA': '❌',
+      'TLE': '⏱️',
+      'RE': '💥',
+      'CE': '🔧'
+    };
+
+    this.logger.log(`   ${statusIcons[result.status]} Case ${result.caseNumber}/${totalCases}: ${result.status}`);
+    this.logger.log(`   ⏱️  Time: ${result.timeMs}ms`);
+    
+    if (!result.passed) {
+      this.logger.log(`   📝 Input: ${result.input.substring(0, 100)}${result.input.length > 100 ? '...' : ''}`);
+      this.logger.log(`   📤 Expected: ${result.expectedOutput.substring(0, 100)}${result.expectedOutput.length > 100 ? '...' : ''}`);
+      this.logger.log(`   📥 Actual: ${result.actualOutput.substring(0, 100)}${result.actualOutput.length > 100 ? '...' : ''}`);
+      
+      if (result.stderr) {
+        this.logger.log(`   🔴 Stderr: ${result.stderr.substring(0, 200)}${result.stderr.length > 200 ? '...' : ''}`);
+      }
+      
+      if (result.errorMsg) {
+        this.logger.log(`   💬 Error: ${result.errorMsg}`);
+      }
+    }
+  }
+
+  /**
+   * Calculate final execution result compatible with Prisma schema
+   */
+  private calculateFinalResult(testResults: TestCaseResult[], totalTimeMs: number): ExecutionResult {
+    const totalCases = testResults.length;
+    const passedCases = testResults.filter(r => r.passed).length;
+    const failedCases = totalCases - passedCases;
+    const score = Math.floor((passedCases / totalCases) * 100);
+
+    // Find failed cases for detailed message
+    const failedCasesDetails = testResults
+      .filter(r => !r.passed)
+      .map(r => `Case ${r.caseNumber}: ${r.status}${r.errorMsg ? ` - ${r.errorMsg}` : ''}`);
+
+    let status: ExecutionResult['status'] = 'ACCEPTED';
+    let message = '🎉 ¡Felicidades! Todos los casos de prueba pasaron.';
+
+    if (testResults.some(r => r.status === 'CE')) {
+      status = 'COMPILATION_ERROR';
+      message = '❌ Error de compilación. Revisa tu código.';
+    } else if (testResults.some(r => r.status === 'TLE')) {
+      status = 'TIME_LIMIT_EXCEEDED';
+      message = '⏱️ Tiempo límite excedido. Optimiza tu algoritmo.';
+    } else if (testResults.some(r => r.status === 'RE')) {
+      status = 'RUNTIME_ERROR';
+      message = '💥 Error durante la ejecución. Revisa tu código.';
+    } else if (testResults.some(r => r.status === 'WA')) {
+      status = 'WRONG_ANSWER';
+      message = `❌ Respuesta incorrecta en ${failedCases} caso(s) de ${totalCases}.`;
+      
+      if (failedCasesDetails.length > 0) {
+        message += ` Fallos: ${failedCasesDetails.join(', ')}`;
+      }
+    }
+
+    return {
+      status,
+      score,
+      timeMsTotal: totalTimeMs,
+      totalCases,
+      passedCases,
+      failedCases,
+      testResults,
+      message
+    };
+  }
+
+  /**
+   * Get error message for failed test cases
+   */
+  private getErrorMessage(status: string, runResult: RunResult): string {
+    switch (status) {
+      case 'WA':
+        return 'La salida no coincide con la esperada';
+      case 'TLE':
+        return 'Tiempo límite excedido';
+      case 'RE':
+        return runResult.stderr || 'Error durante la ejecución';
+      case 'CE':
+        return 'Error de compilación';
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * Executes code in an isolated Docker container
    */
   async executeCode(
     language: ProgrammingLanguage,
@@ -66,43 +221,25 @@ export class RunnerService {
     }
 
     try {
-      // Create temporary directory
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
 
-      // Write code file based on language
       const codeFile = this.getCodeFilename(language);
       const codePath = path.join(tempDir, codeFile);
       fs.writeFileSync(codePath, code, 'utf8');
 
-      // Write input file
       const inputPath = path.join(tempDir, 'input.txt');
       fs.writeFileSync(inputPath, input, 'utf8');
 
-      // Build docker run command
-      const dockerCmd = this.buildDockerRunCommand(
-        language,
-        image,
-        tempDir,
-        codeFile,
-        timeLimit,
-      );
-
+      const dockerCmd = this.buildDockerRunCommand(language, image, tempDir, codeFile, timeLimit);
       this.logger.debug(`[${runId}] Executing: ${dockerCmd.join(' ')}`);
 
       const startTime = Date.now();
-      const result = await this.executeDockerWithTimeout(
-        dockerCmd,
-        timeLimit,
-        runId,
-      );
+      const result = await this.executeDockerWithTimeout(dockerCmd, timeLimit, runId);
       const timeMsElapsed = Date.now() - startTime;
 
-      return {
-        ...result,
-        timeMsElapsed,
-      };
+      return { ...result, timeMsElapsed };
     } catch (error) {
       this.logger.error(`[${runId}] Execution error: ${error.message}`);
       return {
@@ -114,70 +251,14 @@ export class RunnerService {
         error: error.message,
       };
     } finally {
-      // Cleanup temp directory
       try {
         fs.rmSync(tempDir, { recursive: true, force: true });
-      } catch (_) {
-        // Ignore cleanup errors
-      }
+      } catch (_) {}
     }
   }
 
   /**
-   * Executes code against multiple test cases and returns detailed results.
-   */
-  async executeAgainstTestCases(
-    language: ProgrammingLanguage,
-    code: string,
-    testCases: Array<{ id: number; input: string; output: string }>,
-    timeLimit: number = 1500,
-  ): Promise<TestCaseResult[]> {
-    const results: TestCaseResult[] = [];
-
-    this.logger.log(`🧪 Executing ${testCases.length} test cases for ${language}`);
-
-    for (let i = 0; i < testCases.length; i++) {
-      const testCase = testCases[i];
-      this.logger.log(`\n📋 Test Case ${i + 1}/${testCases.length} (ID: ${testCase.id})`);
-      this.logger.log(`   Input: ${testCase.input.substring(0, 50)}${testCase.input.length > 50 ? '...' : ''}`);
-      this.logger.log(`   Expected: ${testCase.output.substring(0, 50)}${testCase.output.length > 50 ? '...' : ''}`);
-
-      const runResult = await this.executeCode(
-        language,
-        code,
-        testCase.input,
-        timeLimit,
-      );
-
-      this.logger.log(`   Actual: ${runResult.output.substring(0, 50)}${runResult.output.length > 50 ? '...' : ''}`);
-      this.logger.log(`   Time: ${runResult.timeMsElapsed}ms`);
-      if (runResult.stderr) {
-        this.logger.log(`   Stderr: ${runResult.stderr.substring(0, 100)}`);
-      }
-
-      const status = this.compareOutputs(
-        runResult,
-        testCase.output,
-        timeLimit,
-      );
-
-      this.logger.log(`   Result: ${status} ${status === 'OK' ? '✅' : '❌'}`);
-
-      results.push({
-        caseId: testCase.id,
-        status,
-        expectedOutput: testCase.output,
-        actualOutput: runResult.output,
-        stderr: runResult.stderr,
-        timeMsElapsed: runResult.timeMsElapsed,
-      });
-    }
-
-    return results;
-  }
-
-  /**
-   * Builds the docker run command with security and resource limits.
+   * Builds the docker run command with security and resource limits
    */
   private buildDockerRunCommand(
     language: ProgrammingLanguage,
@@ -187,71 +268,42 @@ export class RunnerService {
     timeLimit: number,
   ): string[] {
     const executionCmd = this.getExecutionCommand(language, codeFile);
-
-    // Windows path conversion: backslashes to forward slashes for docker
     const dockerPath = tempDir.replace(/\\/g, '/');
 
     return [
-      'run',
-      '--rm',
-      '--network', 'none',
-      '--cpus', this.cpuLimit,
-      '--memory', this.memoryLimit,
-      '--read-only',
-      '--tmpfs', '/tmp:rw,exec,size=128m',
-      '-v', `${tempDir}:/submission:ro`,
-      '--pids-limit', '10',
-      image,
-      'sh', '-c', executionCmd,
+      'run', '--rm', '--network', 'none',
+      '--cpus', this.cpuLimit, '--memory', this.memoryLimit,
+      '--read-only', '--tmpfs', '/tmp:rw,exec,size=128m',
+      '-v', `${tempDir}:/submission:ro`, '--pids-limit', '10',
+      image, 'sh', '-c', executionCmd,
     ];
   }
 
-  /**
-   * Gets the code filename based on language.
-   */
   private getCodeFilename(language: ProgrammingLanguage): string {
     switch (language) {
-      case ProgrammingLanguage.PYTHON:
-        return 'solution.py';
-      case ProgrammingLanguage.NODE:
-        return 'solution.js';
-      case ProgrammingLanguage.CPP:
-        return 'solution.cpp';
-      case ProgrammingLanguage.JAVA:
-        return 'Solution.java';
-      default:
-        throw new Error(`Unknown language: ${language}`);
+      case ProgrammingLanguage.PYTHON: return 'solution.py';
+      case ProgrammingLanguage.NODE: return 'solution.js';
+      case ProgrammingLanguage.CPP: return 'solution.cpp';
+      case ProgrammingLanguage.JAVA: return 'Solution.java';
+      default: throw new Error(`Unknown language: ${language}`);
     }
   }
 
-  /**
-   * Gets the execution command for each language.
-   */
-  private getExecutionCommand(
-    language: ProgrammingLanguage,
-    codeFile: string,
-  ): string {
+  private getExecutionCommand(language: ProgrammingLanguage, codeFile: string): string {
     switch (language) {
       case ProgrammingLanguage.PYTHON:
         return 'python /submission/solution.py < /submission/input.txt';
-
       case ProgrammingLanguage.NODE:
         return 'node /submission/solution.js < /submission/input.txt';
-
       case ProgrammingLanguage.CPP:
         return 'g++ -O2 -o /tmp/a.out /submission/solution.cpp && /tmp/a.out < /submission/input.txt';
-
       case ProgrammingLanguage.JAVA:
         return 'javac -d /tmp /submission/Solution.java && java -cp /tmp Solution < /submission/input.txt';
-
       default:
         throw new Error(`Unknown language: ${language}`);
     }
   }
 
-  /**
-   * Executes docker command with timeout and captures output/error.
-   */
   private async executeDockerWithTimeout(
     dockerCmd: string[],
     timeLimit: number,
@@ -261,18 +313,13 @@ export class RunnerService {
       const timeout = setTimeout(() => {
         this.logger.warn(`[${runId}] Timeout after ${timeLimit}ms`);
         resolve({
-          output: '',
-          stderr: 'Time Limit Exceeded',
-          exitCode: 124,
-          timeMsElapsed: timeLimit,
-          status: 'TLE',
+          output: '', stderr: 'Time Limit Exceeded', exitCode: 124,
+          timeMsElapsed: timeLimit, status: 'TLE',
         });
-      }, timeLimit + 1000); // Add buffer for docker overhead
+      }, timeLimit + 1000);
 
       execFile('docker', dockerCmd, { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
         clearTimeout(timeout);
-
-        // Normalize outputs
         const output = (stdout || '').trimEnd();
         const stderrOutput = (stderr || '').trimEnd();
 
@@ -281,87 +328,34 @@ export class RunnerService {
 
         if (err) {
           exitCode = typeof err.code === 'number' ? err.code : 1;
-          
-          // Determine error type
           if (stderrOutput.includes('error') || stderrOutput.includes('Error')) {
-            // Likely compilation error for C++/Java
             status = 'CE';
-          } else if (stderrOutput.includes('Segmentation fault') || 
-                     stderrOutput.includes('Exception') ||
-                     exitCode === 139) {
+          } else if (stderrOutput.includes('Segmentation fault') || stderrOutput.includes('Exception') || exitCode === 139) {
             status = 'RE';
           } else {
             status = 'RE';
           }
         }
 
-        resolve({
-          output,
-          stderr: stderrOutput,
-          exitCode,
-          timeMsElapsed: 0, // Will be calculated by caller
-          status,
-        });
+        resolve({ output, stderr: stderrOutput, exitCode, timeMsElapsed: 0, status });
       });
     });
   }
 
-  /**
-   * Compares expected vs actual output.
-   * Returns comparison status with detailed logging.
-   */
   private compareOutputs(
     runResult: RunResult,
     expectedOutput: string,
     timeLimit: number,
   ): 'OK' | 'WA' | 'TLE' | 'RE' | 'CE' {
-    // Check for errors first
-    if (runResult.status === 'TLE') {
-      this.logger.debug('   ⏱️  Time Limit Exceeded');
-      return 'TLE';
-    }
-    if (runResult.status === 'RE') {
-      this.logger.debug('   💥 Runtime Error');
-      return 'RE';
-    }
-    if (runResult.status === 'CE') {
-      this.logger.debug('   🔧 Compilation Error');
-      return 'CE';
-    }
+    if (runResult.status === 'TLE') return 'TLE';
+    if (runResult.status === 'RE') return 'RE';
+    if (runResult.status === 'CE') return 'CE';
+    if (runResult.timeMsElapsed > timeLimit) return 'TLE';
 
-    if (runResult.timeMsElapsed > timeLimit) {
-      this.logger.debug(`   ⏱️  Time Limit Exceeded: ${runResult.timeMsElapsed}ms > ${timeLimit}ms`);
-      return 'TLE';
-    }
-
-    // Normalize outputs for comparison
-    const normalizeOutput = (s: string) =>
-      s.trim().split('\n').map((l) => l.trim()).join('\n');
-
+    const normalizeOutput = (s: string) => s.trim().split('\n').map((l) => l.trim()).join('\n');
     const actual = normalizeOutput(runResult.output);
     const expected = normalizeOutput(expectedOutput);
 
-    // Detailed comparison logging
-    if (actual === expected) {
-      this.logger.debug('   ✅ Output matches expected');
-      return 'OK';
-    } else {
-      this.logger.debug('   ❌ Output mismatch');
-      this.logger.debug(`      Expected (${expected.length} chars): "${expected}"`);
-      this.logger.debug(`      Actual   (${actual.length} chars): "${actual}"`);
-      
-      // Show character-by-character difference if strings are short
-      if (expected.length < 100 && actual.length < 100) {
-        const maxLen = Math.max(expected.length, actual.length);
-        for (let i = 0; i < maxLen; i++) {
-          if (expected[i] !== actual[i]) {
-            this.logger.debug(`      First diff at position ${i}: expected '${expected[i] || 'EOF'}' got '${actual[i] || 'EOF'}'`);
-            break;
-          }
-        }
-      }
-      
-      return 'WA';
-    }
+    return actual === expected ? 'OK' : 'WA';
   }
 }

@@ -51,6 +51,7 @@ ENV NODE_ENV=development
 COPY package*.json ./
 COPY prisma ./prisma
 RUN npm ci
+RUN apk add --no-cache docker-cli
 COPY . .
 
 # Make the docker entrypoint executable (will run prisma generate + migrate)

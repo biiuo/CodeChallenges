@@ -65,6 +65,7 @@ export class EnhancedRunnerService {
     memoryLimit: number,
   ): Promise<ExecutionResult> {
     const workDir = await this.createWorkDirectory(submissionId);
+    this.logger.log(`🔍 [${submissionId}] Work directory created: ${workDir}`);
     
     try {
       this.logger.log(`🚀 [${submissionId}] Starting execution: ${testCases.length} cases, ${language}`);
@@ -78,7 +79,9 @@ export class EnhancedRunnerService {
         throw new Error(`Unsupported language: ${language}`);
       }
 
-      await fs.writeFile(path.join(workDir, fileName), code, 'utf8');
+      const codeFilePath = path.join(workDir, fileName);
+      await fs.writeFile(codeFilePath, code, 'utf8');
+      this.logger.log(`🔍 [${submissionId}] Code written to: ${codeFilePath}`);
 
       // Paso 1: Compilación (si aplica)
       if (language === 'cpp' || language === 'java') {
@@ -216,26 +219,22 @@ export class EnhancedRunnerService {
     timeLimit: number,
     memoryLimit: number,
   ): Promise<TestCaseResult> {
-    // Escribir input en archivo
-    const inputFile = path.join(workDir, 'input.txt');
-    await fs.writeFile(inputFile, testCase.input, 'utf8');
-
-    // Construir comando de ejecución
+    // Construir comando de ejecución base (sin redirección)
     const image = this.RUNNER_IMAGES[language];
     let runCmd = '';
 
     switch (language) {
       case 'python':
-        runCmd = 'python3 Main.py < input.txt';
+        runCmd = 'python3 Main.py';
         break;
       case 'node':
-        runCmd = 'node Main.js < input.txt';
+        runCmd = 'node Main.js';
         break;
       case 'cpp':
-        runCmd = './main < input.txt';
+        runCmd = './main';
         break;
       case 'java':
-        runCmd = 'java Main < input.txt';
+        runCmd = 'java Main';
         break;
       default:
         throw new Error(`Unsupported language: ${language}`);
@@ -244,17 +243,22 @@ export class EnhancedRunnerService {
     // Timeout en segundos (convertir de ms)
     const timeoutSec = Math.ceil(timeLimit / 1000);
 
+    // Usar -i para stdin interactivo y echo para pasar el input
     const dockerCmd = [
+      'echo',
+      `'${testCase.input.replace(/'/g, "'\\''")}'`, // Escapar comillas simples
+      '|',
       'docker run',
+      '-i', // Stdin interactivo
       '--rm',
       '--network none',
       `-v ${workDir}:/work`,
       '-w /work',
-      `--cpus=".5"`,
+      `--cpus=.5`,
       `-m ${memoryLimit}m`,
       image,
       'sh', '-c',
-      `"timeout ${timeoutSec}s ${runCmd}"`
+      `'timeout ${timeoutSec}s ${runCmd}'`
     ].join(' ');
 
     const startTime = Date.now();
@@ -263,6 +267,7 @@ export class EnhancedRunnerService {
       const { stdout, stderr } = await execPromise(dockerCmd, {
         timeout: timeLimit + 1000, // Buffer adicional
         maxBuffer: 10 * 1024 * 1024,
+        shell: '/bin/sh', // Usar sh para manejar pipes correctamente
       });
 
       const timeMs = Date.now() - startTime;
@@ -354,8 +359,12 @@ export class EnhancedRunnerService {
   private async createWorkDirectory(submissionId: number): Promise<string> {
     const uniqueId = randomBytes(8).toString('hex');
     const dirName = `subm-${submissionId}-${uniqueId}`;
-    const dirPath = path.join('/tmp', dirName);
+    // Usar path compartido entre host y container worker
+    // Este path debe ser accesible por docker run desde el worker
+    const tmpBaseDir = process.env.RUNNER_TMP_DIR || '/tmp/codechallenges-runs';
+    await fs.mkdir(tmpBaseDir, { recursive: true });
     
+    const dirPath = path.join(tmpBaseDir, dirName);
     await fs.mkdir(dirPath, { recursive: true });
     
     return dirPath;

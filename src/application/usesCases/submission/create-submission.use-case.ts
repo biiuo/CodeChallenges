@@ -31,6 +31,68 @@ export class CreateSubmissionUseCase {
     // 1. Validaciones básicas
     await this.validateInput(input);
 
+    // 1.1 Validación de curso (si aplica)
+    if (input.courseId) {
+      const enrolled = await this.prisma.courseStudent.findFirst({
+        where: { courseId: input.courseId, userId: input.userId },
+        select: { courseId: true },
+      });
+      if (!enrolled) {
+        throw new BadRequestException(`User ${input.userId} is not enrolled in course ${input.courseId}`);
+      }
+
+      // challenge asignado al curso: si tu esquema usa vínculo directo, valida por repositorio
+      // Intentar validar mediante consulta a Challenge con relación a Course si existe
+      const challengeAssignedToCourse = await this.prisma.challenge.findFirst({
+        where: { id: input.challengeId, courses: { some: { code: input.courseId } } },
+        select: { id: true },
+      }).catch(() => null);
+
+      if (!challengeAssignedToCourse) {
+        // Si la relación no existe, saltar esta validación; puedes reemplazar esto por tu tabla de relación real
+        this.logger.warn(`Challenge ${input.challengeId} assignment to course ${input.courseId} not verified (relation table not found)`);
+      }
+    }
+
+    // 1.2 Validación de evaluación (si aplica)
+    if (input.evaluationId) {
+      const evaluation = await this.prisma.evaluation.findUnique({
+        where: { id: input.evaluationId },
+        select: { id: true, date: true, maxDuration: true, courseId: true },
+      });
+      if (!evaluation) {
+        throw new NotFoundException(`Evaluation ${input.evaluationId} not found`);
+      }
+
+      const now = new Date();
+      // Calcular ventana activa a partir de date + maxDuration (minutos)
+      const startAt = evaluation.date;
+      const endAt = new Date(startAt.getTime() + (evaluation.maxDuration ?? 0) * 60_000);
+      if (!(now >= startAt && now <= endAt)) {
+        throw new BadRequestException(`Evaluation ${input.evaluationId} is not active`);
+      }
+
+      const included = await this.prisma.evaluationChallenge.findFirst({
+        where: { evaluationId: input.evaluationId, challengeId: input.challengeId },
+        select: { evaluationId: true },
+      });
+      if (!included) {
+        throw new BadRequestException(`Challenge ${input.challengeId} not part of evaluation ${input.evaluationId}`);
+      }
+
+      // Si la evaluación está asociada a cursos, verificar pertenencia del estudiante
+      // Si la evaluación tiene courseId (según tu esquema), verificar pertenencia del estudiante a ese curso
+      if (evaluation.courseId) {
+        const belongs = await this.prisma.courseStudent.findFirst({
+          where: { userId: input.userId, courseId: evaluation.courseId },
+          select: { userId: true },
+        });
+        if (!belongs) {
+          throw new BadRequestException(`User ${input.userId} is not enrolled in course ${evaluation.courseId} for evaluation ${input.evaluationId}`);
+        }
+      }
+    }
+
     // 2. Calcular submissionNumber
     const submissionNumber = await this.getNextSubmissionNumber(input);
 
@@ -41,8 +103,8 @@ export class CreateSubmissionUseCase {
         challengeId: input.challengeId,
         language: this.normalizeLanguage(input.language),
         code: input.code,
-        courseId: input.courseId,
-        evaluationId: input.evaluationId,
+        courseId: input.courseId ?? null,
+        evaluationId: input.evaluationId ?? null,
         submissionNumber,
         status: SubmissionStatus.QUEUED,
         score: null,

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, DynamicModule } from '@nestjs/common';
 import { PrismaModule } from '../../infrastructure/prisma.module';
 import { CreateSubmissionUseCase } from '../../application/usesCases/submission/create-submission.use-case';
 import { ProcessSubmissionUseCase } from '../../application/usesCases/submission/process-submission.use-case';
@@ -26,29 +26,37 @@ import { PrismaChallengeRepository } from '../../infrastructure/repositories/pri
  * 2. Worker dequeue → ProcessSubmissionUseCase → DB (RUNNING) → EnhancedRunner
  * 3. EnhancedRunner → Docker execution → Results → DB (final state + test results)
  */
+
+const isWorkerEnabled = process.env.ENABLE_WORKER === 'true';
+console.log(`🔧 ENABLE_WORKER=${process.env.ENABLE_WORKER}, isWorkerEnabled=${isWorkerEnabled}`);
+
+const baseProviders = [
+  // Repositories
+  PrismaSubmissionRepository,
+  PrismaChallengeRepository,
+
+  // Observability
+  ObservabilityService,
+
+  // Queue
+  SubmissionQueueService,
+
+  // Use Cases
+  CreateSubmissionUseCase,
+  ProcessSubmissionUseCase,
+
+  // Runner
+  EnhancedRunnerService,
+];
+
+const workerProviders = isWorkerEnabled ? [SubmissionWorkerService] : [];
+
 @Module({
   imports: [PrismaModule],
   controllers: [SubmissionController],
   providers: [
-    // Repositories
-    PrismaSubmissionRepository,
-    PrismaChallengeRepository,
-
-    // Observability
-    ObservabilityService,
-
-    // Queue
-    SubmissionQueueService,
-
-    // Use Cases
-    CreateSubmissionUseCase,
-    ProcessSubmissionUseCase,
-
-    // Runner
-    EnhancedRunnerService,
-
-    // Worker (background service)
-    SubmissionWorkerService,
+    ...baseProviders,
+    ...workerProviders,
   ],
   exports: [
     CreateSubmissionUseCase,

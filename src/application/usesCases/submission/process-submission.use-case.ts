@@ -108,9 +108,9 @@ export class ProcessSubmissionUseCase {
 
       this.logger.log(`[${submissionId}] 📊 Execution result: ${executionResult.status}, score: ${executionResult.score}`);
 
-      // ========== PASO 5: Persistir SubmissionTestResult para cada caso ==========
+      // ========== PASO 5: Persistir SubmissionTestResult ==========
       await this.prisma.submissionTestResult.createMany({
-        data: executionResult.cases.map(caseResult => ({
+        data: executionResult.cases.map((caseResult) => ({
           submissionId,
           caseNumber: caseResult.caseNumber,
           status: caseResult.status,
@@ -122,7 +122,7 @@ export class ProcessSubmissionUseCase {
 
       this.logger.log(`[${submissionId}] ✅ Persisted ${executionResult.cases.length} test results`);
 
-      // ========== PASO 6: Actualizar Submission con status final y score ==========
+      // ========== PASO 6: Actualizar Submission final ==========
       await this.prisma.submission.update({
         where: { id: submissionId },
         data: {
@@ -143,16 +143,15 @@ export class ProcessSubmissionUseCase {
       };
 
     } catch (error) {
-      // Manejo de errores: marcar submission como RUNTIME_ERROR
       this.logger.error(`[${submissionId}] ❌ Error processing submission:`, error);
 
+      // Intentar marcar como RUNTIME_ERROR
       try {
         await this.prisma.submission.update({
           where: { id: submissionId },
           data: {
             status: 'RUNTIME_ERROR',
             score: 0,
-            timeMsTotal: 0,
           },
         });
 
@@ -164,11 +163,11 @@ export class ProcessSubmissionUseCase {
             status: 'RUNTIME_ERROR',
             timeMs: 0,
             output: '',
-            errorMsg: error instanceof Error ? error.message : 'Unknown error',
+            errorMsg: error instanceof Error ? error.message : String(error),
           },
         });
       } catch (dbError) {
-        this.logger.error(`[${submissionId}] Failed to update error status:`, dbError);
+        this.logger.error(`[${submissionId}] Failed to update error state:`, dbError);
       }
 
       throw error;
