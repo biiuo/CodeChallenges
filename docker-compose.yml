@@ -27,6 +27,9 @@ services:
     environment:
       DATABASE_URL: "postgresql://user:pass@db:5432/db?schema=public"
       REDIS_URL: "redis://default:redispass@redis:6379/0"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "redispass"
     ports:
       - "3000:3000"
     depends_on:
@@ -39,6 +42,7 @@ services:
       - ./src:/app/src  # Mount source for hot reload
       - ./prisma:/app/prisma  # Mount prisma schema
       - /app/node_modules  # Preserve node_modules from image
+    entrypoint: ["/app/docker/entrypoint.sh"]
     command: ["npm", "run", "start:dev"]
 
   redis:

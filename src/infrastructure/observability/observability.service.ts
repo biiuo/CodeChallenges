@@ -171,4 +171,152 @@ active_runners ${this.metrics.active_runners}
       active_runners: this.metrics.active_runners,
     };
   }
+
+  // ========== TRAZABILIDAD DETALLADA ==========
+
+  submissionCreated(submissionId: number, userId: string, challengeId: string, language: string) {
+    this.logger.log(JSON.stringify({
+      level: 'info',
+      event: 'submission_created',
+      timestamp: new Date().toISOString(),
+      submissionId,
+      userId,
+      challengeId,
+      language,
+    }));
+  }
+
+  submissionEnqueued(submissionId: number, queueName: string = 'submission.queue') {
+    this.logger.log(JSON.stringify({
+      level: 'info',
+      event: 'submission_enqueued',
+      timestamp: new Date().toISOString(),
+      submissionId,
+      queueName,
+    }));
+  }
+
+  submissionDequeued(submissionId: number) {
+    this.logger.log(JSON.stringify({
+      level: 'info',
+      event: 'submission_dequeued',
+      timestamp: new Date().toISOString(),
+      submissionId,
+    }));
+  }
+
+  runnerStarted(submissionId: number, language: string, challengeId: string, testCasesCount: number) {
+    this.logger.log(JSON.stringify({
+      level: 'info',
+      event: 'runner_started',
+      timestamp: new Date().toISOString(),
+      submissionId,
+      language,
+      challengeId,
+      testCasesCount,
+    }));
+  }
+
+  testCaseExecuted(
+    submissionId: number,
+    testCase: number,
+    status: string,
+    durationMs: number,
+    output: string,
+    expected: string,
+    input?: string,
+    stderr?: string,
+    exitCode?: number,
+  ) {
+    this.logger.log(JSON.stringify({
+      level: 'info',
+      event: 'testcase_executed',
+      timestamp: new Date().toISOString(),
+      submissionId,
+      testCase,
+      status,
+      durationMs,
+      output: output?.substring(0, 200),
+      expected: expected?.substring(0, 200),
+      input: input?.substring(0, 100),
+      stderr: stderr?.substring(0, 200),
+      exitCode,
+    }));
+  }
+
+  runnerFinished(submissionId: number, finalStatus: string, score: number, totalDurationMs: number) {
+    this.logger.log(JSON.stringify({
+      level: 'info',
+      event: 'runner_finished',
+      timestamp: new Date().toISOString(),
+      submissionId,
+      finalStatus,
+      score,
+      totalDurationMs,
+    }));
+  }
+
+  runnerError(submissionId: number, error: string, stderr?: string, exitCode?: number) {
+    this.logger.error(JSON.stringify({
+      level: 'error',
+      event: 'runner_error',
+      timestamp: new Date().toISOString(),
+      submissionId,
+      error,
+      stderr: stderr?.substring(0, 500),
+      exitCode,
+    }));
+  }
+
+  compilationStarted(submissionId: number, language: string) {
+    this.logger.log(JSON.stringify({
+      level: 'info',
+      event: 'compilation_started',
+      timestamp: new Date().toISOString(),
+      submissionId,
+      language,
+    }));
+  }
+
+  compilationFailed(submissionId: number, stderr: string) {
+    this.logger.error(JSON.stringify({
+      level: 'error',
+      event: 'compilation_failed',
+      timestamp: new Date().toISOString(),
+      submissionId,
+      stderr: stderr?.substring(0, 500),
+    }));
+  }
+
+  compilationSucceeded(submissionId: number) {
+    this.logger.log(JSON.stringify({
+      level: 'info',
+      event: 'compilation_succeeded',
+      timestamp: new Date().toISOString(),
+      submissionId,
+    }));
+  }
+
+  // ========== DEBUG MODE ==========
+
+  debugRunner(submissionId: number, details: {
+    command?: string;
+    language?: string;
+    workDir?: string;
+    inputFile?: string;
+    outputFile?: string;
+    testCase?: number;
+    rawOutput?: string;
+    rawStderr?: string;
+    exitCode?: number;
+    timeMs?: number;
+  }) {
+    this.logger.debug(JSON.stringify({
+      level: 'debug',
+      event: 'debug_runner',
+      timestamp: new Date().toISOString(),
+      submissionId,
+      ...details,
+    }));
+  }
 }

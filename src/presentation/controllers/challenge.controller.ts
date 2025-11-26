@@ -24,13 +24,16 @@ import {
   ApiUnauthorizedResponse,
   ApiConflictResponse,
 } from '@nestjs/swagger';
-import { CreateChallengeDto } from '../../application/dtos/challenges';
+import { CreateChallengeDto, CreateTestCaseDto } from '../../application/dtos/challenges';
 import { UpdateChallengeDto } from '../../application/dtos/challenges';
 import { CreateChallengeUseCase } from '../../application/usesCases/challenge/createchallenge.usecase';
 import { FindChallengeByIdUseCase } from '../../application/usesCases/challenge/findchallengebyid.usecase';
 import { FindAllChallengesUseCase } from '../../application/usesCases/challenge/findallchallenges.usecase';
 import { UpdateChallengeUseCase } from '../../application/usesCases/challenge/updatechallenge.usecase';
 import { DeleteChallengeUseCase } from '../../application/usesCases/challenge/deletechallenge.usecase';
+import type { ChallengeRepository } from '../../domain/repositories/challenge.repository';
+import { Inject } from '@nestjs/common';
+import { CHALLENGE_REPOSITORY } from '../../application/tokens';
 import { Role } from '../../domain/entities/user.entity';
 import { Roles } from '../decorators/roles.decorator';
 import { RolesGuard } from '../guards/roles.guard';
@@ -47,6 +50,7 @@ export class ChallengesController {
     private readonly getAllChallengesUseCase: FindAllChallengesUseCase,
     private readonly updateChallengeUseCase: UpdateChallengeUseCase,
     private readonly deleteChallengeUseCase: DeleteChallengeUseCase,
+    @Inject(CHALLENGE_REPOSITORY) private readonly challengeRepo: ChallengeRepository,
   ) {}
 
   @Post()
@@ -302,5 +306,56 @@ export class ChallengesController {
   @ApiForbiddenResponse({ description: 'Sin permisos. Solo ADMIN y PROFESSOR pueden eliminar retos.' })
   async delete(@Param('id') id: string) {
     return await this.deleteChallengeUseCase.execute(id);
+  }
+
+  @Post(':id/testcases')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @ApiOperation({ 
+    summary: 'Agregar casos de prueba a un reto',
+    description: 'Agrega uno o más casos de prueba a un reto existente. Solo disponible para ADMIN y PROFESSOR.'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del reto al que se agregarán los test cases',
+    example: 'CH-ABCDE',
+  })
+  @ApiBody({
+    description: 'Array de casos de prueba a agregar',
+    type: [CreateTestCaseDto],
+    examples: {
+      simple: {
+        summary: 'Agregar 2 casos de prueba',
+        value: [
+          { caseNumber: 1, input: '2\n1 2', output: '3', visible: true },
+          { caseNumber: 2, input: '3\n10 20 30', output: '60', visible: false }
+        ]
+      }
+    }
+  })
+  @ApiOkResponse({ 
+    description: 'Casos de prueba agregados exitosamente',
+    schema: {
+      example: {
+        message: 'Test cases added successfully',
+        count: 2
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Reto no encontrado' })
+  @ApiForbiddenResponse({ description: 'Sin permisos. Solo ADMIN y PROFESSOR pueden agregar casos de prueba.' })
+  async addTestCases(
+    @Param('id') challengeId: string,
+    @Body() testcases: CreateTestCaseDto[],
+  ) {
+    const challenge = await this.challengeRepo.findById(challengeId);
+    if (!challenge) {
+      throw new Error(`Challenge ${challengeId} not found`);
+    }
+    await this.challengeRepo.addTestCases(challengeId, testcases);
+    return {
+      message: 'Test cases added successfully',
+      count: testcases.length,
+    };
   }
 }

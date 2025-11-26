@@ -121,4 +121,18 @@ export class PrismaChallengeRepository implements ChallengeRepository {
     await this.prisma.challenge.delete({ where: { id } });
   }
 
+  async addTestCases(challengeId: string, testcases: Array<{ caseNumber: number; input: string; output: string; visible?: boolean }>): Promise<void> {
+    if (!testcases || testcases.length === 0) return;
+    await this.prisma.testcase.createMany({
+      data: testcases.map(tc => ({
+        challengeId,
+        caseNumber: tc.caseNumber,
+        input: tc.input,
+        output: tc.output,
+        visible: tc.visible ?? false,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
 }

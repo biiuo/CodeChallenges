@@ -71,4 +71,37 @@ export class PrismaSubmissionRepository implements SubmissionRepository {
     });
     return subs.map(SubmissionMapper.toDomain);
   }
+
+  /**
+   * Create a test result for a submission
+   */
+  async createTestResult(data: {
+    submissionId: number;
+    caseNumber: number;
+    status: string;
+    timeMs: number;
+    output: string | null;
+    errorMsg: string | null;
+  }): Promise<void> {
+    await this.prisma.submissionTestResult.create({
+      data: {
+        submissionId: data.submissionId,
+        caseNumber: data.caseNumber,
+        status: data.status,
+        timeMs: data.timeMs,
+        output: data.output,
+        errorMsg: data.errorMsg,
+      },
+    });
+  }
+
+  /**
+   * Get test results for a submission
+   */
+  async getTestResults(submissionId: number): Promise<any[]> {
+    return this.prisma.submissionTestResult.findMany({
+      where: { submissionId },
+      orderBy: { caseNumber: 'asc' },
+    });
+  }
 }

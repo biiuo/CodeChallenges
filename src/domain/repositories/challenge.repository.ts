@@ -11,4 +11,5 @@ export interface ChallengeRepository {
   findPublished(): Promise<Challenge[]>; // published challenges only
   update(id: string, data: Partial<Challenge>): Promise<Challenge>;
   delete(id: string): Promise<void>;
+  addTestCases(challengeId: string, testcases: Array<{ caseNumber: number; input: string; output: string; visible?: boolean }>): Promise<void>;
 }

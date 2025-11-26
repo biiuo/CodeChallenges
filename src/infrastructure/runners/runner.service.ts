@@ -134,7 +134,14 @@ export class RunnerService {
   ): Promise<TestCaseResult[]> {
     const results: TestCaseResult[] = [];
 
-    for (const testCase of testCases) {
+    this.logger.log(`🧪 Executing ${testCases.length} test cases for ${language}`);
+
+    for (let i = 0; i < testCases.length; i++) {
+      const testCase = testCases[i];
+      this.logger.log(`\n📋 Test Case ${i + 1}/${testCases.length} (ID: ${testCase.id})`);
+      this.logger.log(`   Input: ${testCase.input.substring(0, 50)}${testCase.input.length > 50 ? '...' : ''}`);
+      this.logger.log(`   Expected: ${testCase.output.substring(0, 50)}${testCase.output.length > 50 ? '...' : ''}`);
+
       const runResult = await this.executeCode(
         language,
         code,
@@ -142,11 +149,19 @@ export class RunnerService {
         timeLimit,
       );
 
+      this.logger.log(`   Actual: ${runResult.output.substring(0, 50)}${runResult.output.length > 50 ? '...' : ''}`);
+      this.logger.log(`   Time: ${runResult.timeMsElapsed}ms`);
+      if (runResult.stderr) {
+        this.logger.log(`   Stderr: ${runResult.stderr.substring(0, 100)}`);
+      }
+
       const status = this.compareOutputs(
         runResult,
         testCase.output,
         timeLimit,
       );
+
+      this.logger.log(`   Result: ${status} ${status === 'OK' ? '✅' : '❌'}`);
 
       results.push({
         caseId: testCase.id,
@@ -293,24 +308,60 @@ export class RunnerService {
 
   /**
    * Compares expected vs actual output.
+   * Returns comparison status with detailed logging.
    */
   private compareOutputs(
     runResult: RunResult,
     expectedOutput: string,
     timeLimit: number,
   ): 'OK' | 'WA' | 'TLE' | 'RE' | 'CE' {
-    if (runResult.status === 'TLE') return 'TLE';
-    if (runResult.status === 'RE') return 'RE';
-    if (runResult.status === 'CE') return 'CE';
+    // Check for errors first
+    if (runResult.status === 'TLE') {
+      this.logger.debug('   ⏱️  Time Limit Exceeded');
+      return 'TLE';
+    }
+    if (runResult.status === 'RE') {
+      this.logger.debug('   💥 Runtime Error');
+      return 'RE';
+    }
+    if (runResult.status === 'CE') {
+      this.logger.debug('   🔧 Compilation Error');
+      return 'CE';
+    }
 
-    if (runResult.timeMsElapsed > timeLimit) return 'TLE';
+    if (runResult.timeMsElapsed > timeLimit) {
+      this.logger.debug(`   ⏱️  Time Limit Exceeded: ${runResult.timeMsElapsed}ms > ${timeLimit}ms`);
+      return 'TLE';
+    }
 
+    // Normalize outputs for comparison
     const normalizeOutput = (s: string) =>
       s.trim().split('\n').map((l) => l.trim()).join('\n');
 
     const actual = normalizeOutput(runResult.output);
     const expected = normalizeOutput(expectedOutput);
 
-    return actual === expected ? 'OK' : 'WA';
+    // Detailed comparison logging
+    if (actual === expected) {
+      this.logger.debug('   ✅ Output matches expected');
+      return 'OK';
+    } else {
+      this.logger.debug('   ❌ Output mismatch');
+      this.logger.debug(`      Expected (${expected.length} chars): "${expected}"`);
+      this.logger.debug(`      Actual   (${actual.length} chars): "${actual}"`);
+      
+      // Show character-by-character difference if strings are short
+      if (expected.length < 100 && actual.length < 100) {
+        const maxLen = Math.max(expected.length, actual.length);
+        for (let i = 0; i < maxLen; i++) {
+          if (expected[i] !== actual[i]) {
+            this.logger.debug(`      First diff at position ${i}: expected '${expected[i] || 'EOF'}' got '${actual[i] || 'EOF'}'`);
+            break;
+          }
+        }
+      }
+      
+      return 'WA';
+    }
   }
 }
