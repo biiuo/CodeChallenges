@@ -1,3 +1,4 @@
+// Force reload v3
 import {
   Controller,
   Get,
@@ -9,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseIntPipe,
+  Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -23,115 +25,87 @@ import {
   ApiUnauthorizedResponse,
   ApiBadRequestResponse,
 } from '@nestjs/swagger';
-import { ProcessSubmissionUseCase } from 'src/application/usesCases/submission/process-submission.use-case';
+import { CreateSubmissionUseCase } from 'src/application/usesCases/submission/create-submission.use-case';
 import { PrismaSubmissionRepository } from 'src/infrastructure/repositories/prisma-submission.repository';
 import { PrismaChallengeRepository } from 'src/infrastructure/repositories/prisma-challenge.repository';
+import { ObservabilityService } from 'src/infrastructure/observability/observability.service';
 import { Submission, SubmissionStatus } from 'src/domain/entities/submission.entity';
 import { CreateSubmissionDto, SubmissionResponseDto } from 'src/application/dtos/submission';
 
-export interface CreateSubmissionDTO {
-  code: string;
-  language: string;
-  challengeId: string;
-}
-
+@ApiTags('Submissions')
 @Controller('submissions')
 @UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth('access')
+@ApiUnauthorizedResponse({ description: 'Token JWT inválido o faltante' })
 export class SubmissionController {
+  private readonly logger = new Logger(SubmissionController.name);
+
   constructor(
-    private readonly processSubmissionUseCase: ProcessSubmissionUseCase,
+    private readonly createSubmissionUseCase: CreateSubmissionUseCase,
     private readonly submissionRepo: PrismaSubmissionRepository,
-    private readonly testcaseRepo: PrismaChallengeRepository,
+    private readonly challengeRepo: PrismaChallengeRepository,
+    private readonly observability: ObservabilityService,
   ) {}
 
-  /**
-   * Create a new submission (save in DB with status QUEUED)
-   * POST /submissions
-   */  @Post()
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Enviar solución de un reto' })
-  @ApiBody({
-    type: CreateSubmissionDto,
-    examples: {
-      pythonHelloWorld: {
-        summary: 'Python - Hello World',
-        value: {
-          code: 'print("Hello World")',
-          language: 'python',
-          challengeId: 'CH-ABCDE'
-        }
-      },
-      javascriptTwoSum: {
-        summary: 'JavaScript - Two Sum',
-        value: {
-          code: 'function twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) {\n      return [map.get(complement), i];\n    }\n    map.set(nums[i], i);\n  }\n  return [];\n}',
-          language: 'javascript',
-          challengeId: 'CH-TWOSUM'
-        }
-      }
-    }
-  })
-  @ApiCreatedResponse({
-    description: 'Submission creado exitosamente',
-    type: SubmissionResponseDto,
-    schema: {
-      example: {
-        id: 123,
-        userId: '00001111-2222-3333-4444-555566667777',
-        challengeId: 'CH-ABCDE',
-        code: 'print("Hello World")',
-        language: 'python',
-        status: 'QUEUED',
-        score: 0,
-        timeMsTotal: 0,
-        createdAt: '2025-11-25T23:45:30.000Z'
-      }
-    }
-  })
+  @ApiCreatedResponse({ description: 'Submission creado', type: SubmissionResponseDto })
   @ApiBadRequestResponse({ description: 'Datos inválidos' })
   @ApiNotFoundResponse({ description: 'Challenge no encontrado' })
   async createSubmission(
-    @Body() dto: CreateSubmissionDTO,
+    @Body() dto: CreateSubmissionDto,
     @Request() req: any,
   ): Promise<Submission> {
+    console.log('🔍 [Controller] createSubmission CALLED');
+    console.log('🔍 [Controller] DTO:', JSON.stringify(dto));
+    
     const userId = req.user.userId;
+    console.log(`🔍 [Controller] UserId: ${userId}`);
 
-    // Save submission to DB with QUEUED status
-    const submission = await this.submissionRepo.create({
+    const submission = await this.createSubmissionUseCase.execute({
       userId,
       challengeId: dto.challengeId,
       code: dto.code,
       language: dto.language,
-      status: SubmissionStatus.QUEUED,
+      courseId: undefined,
+      evaluationId: undefined,
     });
 
-
+    console.log(`🔍 [Controller] Submission created: ${submission.id}`);
     return submission;
   }
 
-  /**
-   * Get a specific submission by ID
-   * GET /submissions/:id
-   */
   @Get(':id')
+  @ApiOperation({ summary: 'Obtener submission por ID' })
   async getSubmission(@Param('id', ParseIntPipe) submissionId: number): Promise<Submission> {
     const submission = await this.submissionRepo.findById(submissionId);
-
     if (!submission) {
       throw new Error(`Submission ${submissionId} not found`);
     }
-
     return submission;
   }
 
-  /**
-   * List all submissions for the current user
-   * GET /submissions
-   */
+  @Get(':id/results')
+  @ApiOperation({ summary: 'Obtener resultados por caso de prueba' })
+  async getSubmissionResults(@Param('id', ParseIntPipe) submissionId: number): Promise<any[]> {
+    const submission = await this.submissionRepo.findById(submissionId);
+    if (!submission) {
+      throw new Error(`Submission ${submissionId} not found`);
+    }
+    return this.submissionRepo.getTestResults(submissionId);
+  }
+
   @Get()
+  @ApiOperation({ summary: 'Listar submissions del usuario' })
   async listSubmissions(@Request() req: any): Promise<Submission[]> {
     const userId = req.user.userId;
     return this.submissionRepo.findByUser(userId);
   }
 
+  @Get('metrics')
+  @ApiOperation({ summary: 'Obtener métricas del sistema' })
+  getMetrics(): any {
+    return this.observability.getMetricsJson();
+  }
 }
