@@ -29,6 +29,13 @@ export class CreateChallengeUseCase {
       dto.status ? (dto.status as ChallengeStatus) : ChallengeStatus.DRAFT,
       dto.isPublic ?? false,
       dto.authorId,
+      dto.testcases?.map(tc => ({
+        caseNumber: tc.caseNumber,
+        input: tc.input,
+        output: tc.output,
+        visible: tc.visible ?? true,
+        createdAt: new Date()
+      }))
     );
 
     return this.challengeRepo.create(challenge);

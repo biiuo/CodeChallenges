@@ -1,4 +1,4 @@
-version: "3.9"
+
 
 services:
   db:
@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -36,10 +36,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
     volumes:
-      - ./src:/app/src  # Mount the source code
-      - /app/node_modules  # Ensure node_modules is accessible
-    entrypoint: ["/app/docker/entrypoint.sh"]
-    command: ["npm", "run", "start:dev"]  # Use the development command
+      - ./src:/app/src  # Mount source for hot reload
+      - ./prisma:/app/prisma  # Mount prisma schema
+      - /app/node_modules  # Preserve node_modules from image
+    command: ["npm", "run", "start:dev"]
 
   redis:
     image: redis:7-alpine

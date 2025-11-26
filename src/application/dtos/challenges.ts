@@ -1,6 +1,40 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsArray, IsInt, IsEnum, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsInt, IsEnum, IsBoolean, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ChallengeStatus, Difficulty } from "src/domain/entities/challenge.entity";
+
+// DTO para TestCase
+export class CreateTestCaseDto {
+  @ApiProperty({ 
+    example: 1, 
+    description: 'Número del caso de prueba' 
+  })
+  @IsInt()
+  caseNumber!: number;
+
+  @ApiProperty({ 
+    example: '5 3', 
+    description: 'Entrada del caso de prueba' 
+  })
+  @IsString()
+  input!: string;
+
+  @ApiProperty({ 
+    example: '8', 
+    description: 'Salida esperada del caso de prueba' 
+  })
+  @IsString()
+  output!: string;
+
+  @ApiProperty({ 
+    example: true, 
+    description: 'Si el caso de prueba es visible para el usuario',
+    required: false
+  })
+  @IsOptional()
+  @IsBoolean()
+  visible?: boolean;
+}
 
 // DTO para crear un reto
 export class CreateChallengeDto {
@@ -76,6 +110,21 @@ export class CreateChallengeDto {
   @IsOptional()
   @IsBoolean()
   isPublic?: boolean;
+
+  @ApiProperty({ 
+    type: [CreateTestCaseDto],
+    example: [
+      { caseNumber: 1, input: '5 3', output: '8', visible: true },
+      { caseNumber: 2, input: '10 20', output: '30', visible: false }
+    ], 
+    description: 'Casos de prueba del reto',
+    required: false
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateTestCaseDto)
+  testcases?: CreateTestCaseDto[];
 }
 
 // DTO para actualizar un reto

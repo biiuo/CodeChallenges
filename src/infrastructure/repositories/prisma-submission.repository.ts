@@ -11,8 +11,24 @@ export class PrismaSubmissionRepository implements SubmissionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: Partial<Submission>): Promise<Submission> {
+    // Calcular el siguiente submissionNumber para este usuario y challenge
+    const lastSubmission = await this.prisma.submission.findFirst({
+      where: {
+        userId: data.userId,
+        challengeId: data.challengeId,
+      },
+      orderBy: {
+        submissionNumber: 'desc',
+      },
+    });
+
+    const submissionNumber = lastSubmission ? lastSubmission.submissionNumber + 1 : 1;
+
     const created = await this.prisma.submission.create({
-      data: SubmissionMapper.toPrisma(data as Submission),
+      data: {
+        ...SubmissionMapper.toPrisma(data as Submission),
+        submissionNumber,
+      },
     });
     return SubmissionMapper.toDomain(created);
   }

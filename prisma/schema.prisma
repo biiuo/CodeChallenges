@@ -167,10 +167,11 @@ model Submission {
   evaluationId    Int?
 
   // Relaciones:
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  challenge       Challenge     @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  course          Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  evaluation      Evaluation?   @relation(fields: [evaluationId], references: [id], onDelete: SetNull)
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge       Challenge               @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  course          Course?                 @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  evaluation      Evaluation?             @relation(fields: [evaluationId], references: [id], onDelete: SetNull)
+  testResults     SubmissionTestResult[]  // Resultados individuales por caso de prueba
 
   @@unique([userId, challengeId, courseId, evaluationId, submissionNumber])
 }
@@ -203,4 +204,25 @@ model EvaluationChallenge {
   challenge  Challenge  @relation(fields: [challengeId], references: [id])
 
   @@unique([evaluationId, challengeId])
+}
+
+// ===================================================
+
+/// Resultado individual de cada caso de prueba ejecutado en un submission.
+/// Almacena el estado, tiempo de ejecución y salida de cada test case.
+model SubmissionTestResult {
+  id           Int      @id @default(autoincrement())
+  submissionId Int                                      // FK → Submission.id
+  caseNumber   Int                                      // Número del caso de prueba
+  status       String                                   // "OK", "WRONG_ANSWER", "TIME_LIMIT_EXCEEDED", "RUNTIME_ERROR"
+  timeMs       Int                                      // Tiempo de ejecución en milisegundos
+  output       String?                                  // Salida generada (opcional, para debugging)
+  errorMsg     String?                                  // Mensaje de error si lo hay
+  createdAt    DateTime @default(now())
+
+  // Relaciones:
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, caseNumber])
+  @@index([submissionId])
 }

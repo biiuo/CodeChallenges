@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../persistence/prisma.service';
 import { ChallengeRepository } from '../../domain/repositories/challenge.repository';
 import { Challenge, ChallengeStatus, Difficulty } from '../../domain/entities/challenge.entity';
+import { ChallengeMapper } from '../mappers/challenge.mapper';
 
 @Injectable()
 export class PrismaChallengeRepository implements ChallengeRepository {
@@ -20,29 +21,44 @@ export class PrismaChallengeRepository implements ChallengeRepository {
         status: data.status ?? ChallengeStatus.DRAFT,
         isPublic: data.isPublic ?? false,
         authorId: data.authorId!,
+        testcases: data.testCases ? {
+          create: data.testCases.map(tc => ({
+            caseNumber: tc.caseNumber,
+            input: tc.input,
+            output: tc.output,
+            visible: tc.visible
+          }))
+        } : undefined
       },
       include: {
-        courses: true,
-        author: true
+        testcases: true
       }
     });
 
-    return this.toDomain(created);
+    return ChallengeMapper.toDomain(created);
   }
 
   async findById(id: string): Promise<Challenge | null> {
-    const found = await this.prisma.challenge.findUnique({ where: { id } });
-    return found ? this.toDomain(found) : null;
+    const found = await this.prisma.challenge.findUnique({ 
+      where: { id },
+      include: { testcases: true }
+    });
+    return found ? ChallengeMapper.toDomain(found) : null;
   }
 
   async findByTitle(title: string): Promise<Challenge | null> {
-    const found = await this.prisma.challenge.findFirst({ where: { title } });
-    return found ? this.toDomain(found) : null;
+    const found = await this.prisma.challenge.findFirst({ 
+      where: { title },
+      include: { testcases: true }
+    });
+    return found ? ChallengeMapper.toDomain(found) : null;
   }
 
   async findAll(): Promise<Challenge[]> {
-    const list = await this.prisma.challenge.findMany();
-    return list.map(this.toDomain);
+    const list = await this.prisma.challenge.findMany({
+      include: { testcases: true }
+    });
+    return list.map(c => ChallengeMapper.toDomain(c));
   }
 
   async findByCourse(courseId: string): Promise<Challenge[]> {
@@ -56,22 +72,27 @@ export class PrismaChallengeRepository implements ChallengeRepository {
       },
       include: {
         courses: true,
-        author: true
+        author: true,
+        testcases: true
       }
     });
-    return list.map(this.toDomain);
+    return list.map(c => ChallengeMapper.toDomain(c));
   }
 
   async findByStatus(status: ChallengeStatus): Promise<Challenge[]> {
-    const list = await this.prisma.challenge.findMany({ where: { status } });
-    return list.map(this.toDomain);
+    const list = await this.prisma.challenge.findMany({ 
+      where: { status },
+      include: { testcases: true }
+    });
+    return list.map(c => ChallengeMapper.toDomain(c));
   }
 
   async findPublished(): Promise<Challenge[]> {
     const list = await this.prisma.challenge.findMany({
       where: { status: ChallengeStatus.PUBLISHED },
+      include: { testcases: true }
     });
-    return list.map(this.toDomain);
+    return list.map(c => ChallengeMapper.toDomain(c));
   }
 
   async update(id: string, data: Partial<Challenge>): Promise<Challenge> {
@@ -88,28 +109,16 @@ export class PrismaChallengeRepository implements ChallengeRepository {
         isPublic: data.isPublic,
         authorId: data.authorId,
       },
+      include: {
+        testcases: true
+      }
     });
 
-    return this.toDomain(updated);
+    return ChallengeMapper.toDomain(updated);
   }
 
   async delete(id: string): Promise<void> {
     await this.prisma.challenge.delete({ where: { id } });
   }
 
-  // 🧭 Mapeo Prisma → Dominio
-  private toDomain(prismaChallenge: any): Challenge {
-    return new Challenge(
-      prismaChallenge.id,
-      prismaChallenge.title,
-      prismaChallenge.description,
-      prismaChallenge.difficulty ?? null, // ✅ null seguro
-      prismaChallenge.tags ?? [],
-      prismaChallenge.timeLimit,
-      prismaChallenge.memoryLimit,
-      prismaChallenge.status,
-      prismaChallenge.isPublic,
-      prismaChallenge.authorId,
-    );
-  }
 }

@@ -11,11 +11,24 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiParam,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNotFoundResponse,
+  ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
+} from '@nestjs/swagger';
 import { ProcessSubmissionUseCase } from 'src/application/usesCases/submission/process-submission.use-case';
 import { PrismaSubmissionRepository } from 'src/infrastructure/repositories/prisma-submission.repository';
-import { PrismaTestcaseRepository } from 'src/infrastructure/repositories/prisma-testcase.repository';
+import { PrismaChallengeRepository } from 'src/infrastructure/repositories/prisma-challenge.repository';
 import { Submission, SubmissionStatus } from 'src/domain/entities/submission.entity';
 import { ProcessSubmissionDTO } from 'src/application/usesCases/submission/process-submission.use-case';
+import { CreateSubmissionDto, SubmissionResponseDto } from 'src/application/dtos/submission';
 
 export interface CreateSubmissionDTO {
   code: string;
@@ -29,15 +42,55 @@ export class SubmissionController {
   constructor(
     private readonly processSubmissionUseCase: ProcessSubmissionUseCase,
     private readonly submissionRepo: PrismaSubmissionRepository,
-    private readonly testcaseRepo: PrismaTestcaseRepository,
+    private readonly testcaseRepo: PrismaChallengeRepository,
   ) {}
 
   /**
    * Create a new submission (save in DB with status QUEUED)
    * POST /submissions
-   */
-  @Post()
+   */  @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Enviar solución de un reto' })
+  @ApiBody({
+    type: CreateSubmissionDto,
+    examples: {
+      pythonHelloWorld: {
+        summary: 'Python - Hello World',
+        value: {
+          code: 'print("Hello World")',
+          language: 'python',
+          challengeId: 'CH-ABCDE'
+        }
+      },
+      javascriptTwoSum: {
+        summary: 'JavaScript - Two Sum',
+        value: {
+          code: 'function twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) {\n      return [map.get(complement), i];\n    }\n    map.set(nums[i], i);\n  }\n  return [];\n}',
+          language: 'javascript',
+          challengeId: 'CH-TWOSUM'
+        }
+      }
+    }
+  })
+  @ApiCreatedResponse({
+    description: 'Submission creado exitosamente',
+    type: SubmissionResponseDto,
+    schema: {
+      example: {
+        id: 123,
+        userId: '00001111-2222-3333-4444-555566667777',
+        challengeId: 'CH-ABCDE',
+        code: 'print("Hello World")',
+        language: 'python',
+        status: 'QUEUED',
+        score: 0,
+        timeMsTotal: 0,
+        createdAt: '2025-11-25T23:45:30.000Z'
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Datos inválidos' })
+  @ApiNotFoundResponse({ description: 'Challenge no encontrado' })
   async createSubmission(
     @Body() dto: CreateSubmissionDTO,
     @Request() req: any,
@@ -171,14 +224,14 @@ export class SubmissionController {
     challengeId: string,
   ): Promise<Array<{ id: number; input: string; output: string }>> {
     try {
-      const testcases = await this.testcaseRepo.findAllByChallengeId(challengeId);
+      const challenge = await this.testcaseRepo.findById(challengeId);
+      if (!challenge || !challenge.testCases || challenge.testCases.length === 0) {
       
-      if (!testcases || testcases.length === 0) {
         console.warn(`No test cases found for challenge ${challengeId}`);
         return [];
       }
 
-      return testcases.map((tc) => ({
+      return challenge.testCases.map((tc) => ({
         id: tc.caseNumber,
         input: tc.input,
         output: tc.output,

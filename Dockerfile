@@ -2,6 +2,7 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY package*.json ./
+COPY prisma ./prisma
 
 RUN npm ci
 
@@ -48,6 +49,7 @@ WORKDIR /app
 ENV NODE_ENV=development
 
 COPY package*.json ./
+COPY prisma ./prisma
 RUN npm ci
 COPY . .
 
