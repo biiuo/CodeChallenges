@@ -397,7 +397,7 @@ export class SubmissionController {
    * Get observability metrics
    * GET /submissions/metrics
    */
-  @Get('metrics')
+  @Get('metrics/json') // Changed path to avoid conflict with :id param
   @ApiOperation({
     summary: 'Obtener métricas del sistema de submissions',
     description: 'Retorna métricas JSON sobre submissions procesadas, tiempos de ejecución, runners activos, etc.',
@@ -419,7 +419,7 @@ export class SubmissionController {
       },
     },
   })
-  getMetrics(): any {
-    return this.observability.getMetricsJson();
+  async getMetrics(): Promise<any> {
+    return await this.observability.getMetricsJson();
   }
 }

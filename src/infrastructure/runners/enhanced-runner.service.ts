@@ -68,6 +68,7 @@ export class EnhancedRunnerService {
     this.logger.log(`🔍 [${submissionId}] Work directory created: ${workDir}`);
     
     try {
+      await this.observability.incrementActiveRunners();
       this.logger.log(`🚀 [${submissionId}] Starting execution: ${testCases.length} cases, ${language}`);
 
       // 📊 OBSERVABILITY: Runner started
@@ -170,6 +171,7 @@ export class EnhancedRunnerService {
       };
 
     } finally {
+      await this.observability.decrementActiveRunners();
       // Limpieza: eliminar directorio temporal
       await this.cleanupWorkDirectory(workDir);
     }
@@ -252,10 +254,12 @@ export class EnhancedRunnerService {
       '-i', // Stdin interactivo
       '--rm',
       '--network none',
+      '--read-only',      // Requerimiento: Solo lectura
+      '--tmpfs /tmp',     // Necesario para algunos runtimes en modo read-only
       `-v ${workDir}:/work`,
       '-w /work',
-      `--cpus=.5`,
-      `-m ${memoryLimit}m`,
+      `--cpus=0.5`,       // Requerimiento: Límite CPU 0.5
+      `-m ${memoryLimit}m`, // Requerimiento: Límite memoria (dinámico según challenge)
       image,
       'sh', '-c',
       `'timeout ${timeoutSec}s ${runCmd}'`

@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import Redis from 'ioredis';
+import { REDIS_CLIENT } from 'src/application/tokens';
 
 export interface SubmissionMetrics {
   submissionId: string;
@@ -16,17 +18,21 @@ export interface SubmissionMetrics {
 export class ObservabilityService {
   private readonly logger = new Logger(ObservabilityService.name);
 
-  private metrics = {
-    submissions_total: 0,
-    submissions_accepted: 0,
-    submissions_wrong_answer: 0,
-    submissions_time_limit_exceeded: 0,
-    submissions_runtime_error: 0,
-    submissions_compilation_error: 0,
-    submissions_failed_total: 0,
-    total_execution_time_ms: 0,
-    execution_count: 0,
-    active_runners: 0,
+  constructor(
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+  ) {}
+
+  private readonly KEYS = {
+    SUBMISSIONS_TOTAL: 'metrics:submissions_total',
+    SUBMISSIONS_ACCEPTED: 'metrics:submissions_accepted',
+    SUBMISSIONS_WRONG_ANSWER: 'metrics:submissions_wrong_answer',
+    SUBMISSIONS_TIME_LIMIT_EXCEEDED: 'metrics:submissions_time_limit_exceeded',
+    SUBMISSIONS_RUNTIME_ERROR: 'metrics:submissions_runtime_error',
+    SUBMISSIONS_COMPILATION_ERROR: 'metrics:submissions_compilation_error',
+    SUBMISSIONS_FAILED_TOTAL: 'metrics:submissions_failed_total',
+    TOTAL_EXECUTION_TIME_MS: 'metrics:total_execution_time_ms',
+    EXECUTION_COUNT: 'metrics:execution_count',
+    ACTIVE_RUNNERS: 'metrics:active_runners',
   };
 
   /**
@@ -56,27 +62,27 @@ export class ObservabilityService {
   /**
    * Record a submission attempt.
    */
-  recordSubmission(status: string): void {
-    this.metrics.submissions_total++;
+  async recordSubmission(status: string): Promise<void> {
+    await this.redis.incr(this.KEYS.SUBMISSIONS_TOTAL);
 
     switch (status) {
       case 'ACCEPTED':
-        this.metrics.submissions_accepted++;
+        await this.redis.incr(this.KEYS.SUBMISSIONS_ACCEPTED);
         break;
       case 'WRONG_ANSWER':
-        this.metrics.submissions_wrong_answer++;
+        await this.redis.incr(this.KEYS.SUBMISSIONS_WRONG_ANSWER);
         break;
       case 'TIME_LIMIT_EXCEEDED':
-        this.metrics.submissions_time_limit_exceeded++;
+        await this.redis.incr(this.KEYS.SUBMISSIONS_TIME_LIMIT_EXCEEDED);
         break;
       case 'RUNTIME_ERROR':
-        this.metrics.submissions_runtime_error++;
+        await this.redis.incr(this.KEYS.SUBMISSIONS_RUNTIME_ERROR);
         break;
       case 'COMPILATION_ERROR':
-        this.metrics.submissions_compilation_error++;
+        await this.redis.incr(this.KEYS.SUBMISSIONS_COMPILATION_ERROR);
         break;
       case 'ERROR':
-        this.metrics.submissions_failed_total++;
+        await this.redis.incr(this.KEYS.SUBMISSIONS_FAILED_TOTAL);
         break;
     }
   }
@@ -84,61 +90,85 @@ export class ObservabilityService {
   /**
    * Record execution time.
    */
-  recordExecutionTime(durationMs: number): void {
-    this.metrics.total_execution_time_ms += durationMs;
-    this.metrics.execution_count++;
+  async recordExecutionTime(durationMs: number): Promise<void> {
+    await this.redis.incrby(this.KEYS.TOTAL_EXECUTION_TIME_MS, Math.floor(durationMs));
+    await this.redis.incr(this.KEYS.EXECUTION_COUNT);
   }
 
   /**
    * Increment active runners count.
    */
-  incrementActiveRunners(): void {
-    this.metrics.active_runners++;
+  async incrementActiveRunners(): Promise<void> {
+    await this.redis.incr(this.KEYS.ACTIVE_RUNNERS);
   }
 
   /**
    * Decrement active runners count.
    */
-  decrementActiveRunners(): void {
-    this.metrics.active_runners = Math.max(0, this.metrics.active_runners - 1);
+  async decrementActiveRunners(): Promise<void> {
+    const current = await this.redis.get(this.KEYS.ACTIVE_RUNNERS);
+    if (current && parseInt(current) > 0) {
+      await this.redis.decr(this.KEYS.ACTIVE_RUNNERS);
+    }
   }
 
   /**
    * Get current metrics in Prometheus-compatible format.
    */
-  getMetricsPrometheus(): string {
-    const avgTime =
-      this.metrics.execution_count > 0
-        ? (this.metrics.total_execution_time_ms / this.metrics.execution_count).toFixed(2)
-        : 0;
+  async getMetricsPrometheus(): Promise<string> {
+    const [
+      submissionsTotal,
+      submissionsAccepted,
+      submissionsWrongAnswer,
+      submissionsTimeLimitExceeded,
+      submissionsRuntimeError,
+      submissionsCompilationError,
+      submissionsFailedTotal,
+      totalExecutionTimeMs,
+      executionCount,
+      activeRunners,
+    ] = await Promise.all([
+      this.redis.get(this.KEYS.SUBMISSIONS_TOTAL).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_ACCEPTED).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_WRONG_ANSWER).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_TIME_LIMIT_EXCEEDED).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_RUNTIME_ERROR).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_COMPILATION_ERROR).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_FAILED_TOTAL).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.TOTAL_EXECUTION_TIME_MS).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.EXECUTION_COUNT).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.ACTIVE_RUNNERS).then(v => parseInt(v || '0')),
+    ]);
+
+    const avgTime = executionCount > 0 ? (totalExecutionTimeMs / executionCount).toFixed(2) : 0;
 
     return `# HELP submissions_total Total number of submissions processed
 # TYPE submissions_total counter
-submissions_total ${this.metrics.submissions_total}
+submissions_total ${submissionsTotal}
 
 # HELP submissions_accepted Total accepted submissions
 # TYPE submissions_accepted counter
-submissions_accepted ${this.metrics.submissions_accepted}
+submissions_accepted ${submissionsAccepted}
 
 # HELP submissions_wrong_answer Total wrong answer submissions
 # TYPE submissions_wrong_answer counter
-submissions_wrong_answer ${this.metrics.submissions_wrong_answer}
+submissions_wrong_answer ${submissionsWrongAnswer}
 
 # HELP submissions_time_limit_exceeded Total time limit exceeded submissions
 # TYPE submissions_time_limit_exceeded counter
-submissions_time_limit_exceeded ${this.metrics.submissions_time_limit_exceeded}
+submissions_time_limit_exceeded ${submissionsTimeLimitExceeded}
 
 # HELP submissions_runtime_error Total runtime error submissions
 # TYPE submissions_runtime_error counter
-submissions_runtime_error ${this.metrics.submissions_runtime_error}
+submissions_runtime_error ${submissionsRuntimeError}
 
 # HELP submissions_compilation_error Total compilation error submissions
 # TYPE submissions_compilation_error counter
-submissions_compilation_error ${this.metrics.submissions_compilation_error}
+submissions_compilation_error ${submissionsCompilationError}
 
 # HELP submissions_failed_total Total failed submissions (internal errors)
 # TYPE submissions_failed_total counter
-submissions_failed_total ${this.metrics.submissions_failed_total}
+submissions_failed_total ${submissionsFailedTotal}
 
 # HELP average_execution_time_ms Average execution time in milliseconds
 # TYPE average_execution_time_ms gauge
@@ -146,29 +176,50 @@ average_execution_time_ms ${avgTime}
 
 # HELP active_runners Current number of active runner containers
 # TYPE active_runners gauge
-active_runners ${this.metrics.active_runners}
+active_runners ${activeRunners}
 `;
   }
 
   /**
    * Get current metrics as JSON.
    */
-  getMetricsJson() {
-    const avgTime =
-      this.metrics.execution_count > 0
-        ? this.metrics.total_execution_time_ms / this.metrics.execution_count
-        : 0;
+  async getMetricsJson() {
+    const [
+      submissionsTotal,
+      submissionsAccepted,
+      submissionsWrongAnswer,
+      submissionsTimeLimitExceeded,
+      submissionsRuntimeError,
+      submissionsCompilationError,
+      submissionsFailedTotal,
+      totalExecutionTimeMs,
+      executionCount,
+      activeRunners,
+    ] = await Promise.all([
+      this.redis.get(this.KEYS.SUBMISSIONS_TOTAL).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_ACCEPTED).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_WRONG_ANSWER).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_TIME_LIMIT_EXCEEDED).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_RUNTIME_ERROR).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_COMPILATION_ERROR).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.SUBMISSIONS_FAILED_TOTAL).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.TOTAL_EXECUTION_TIME_MS).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.EXECUTION_COUNT).then(v => parseInt(v || '0')),
+      this.redis.get(this.KEYS.ACTIVE_RUNNERS).then(v => parseInt(v || '0')),
+    ]);
+
+    const avgTime = executionCount > 0 ? totalExecutionTimeMs / executionCount : 0;
 
     return {
-      submissions_total: this.metrics.submissions_total,
-      submissions_accepted: this.metrics.submissions_accepted,
-      submissions_wrong_answer: this.metrics.submissions_wrong_answer,
-      submissions_time_limit_exceeded: this.metrics.submissions_time_limit_exceeded,
-      submissions_runtime_error: this.metrics.submissions_runtime_error,
-      submissions_compilation_error: this.metrics.submissions_compilation_error,
-      submissions_failed_total: this.metrics.submissions_failed_total,
+      submissions_total: submissionsTotal,
+      submissions_accepted: submissionsAccepted,
+      submissions_wrong_answer: submissionsWrongAnswer,
+      submissions_time_limit_exceeded: submissionsTimeLimitExceeded,
+      submissions_runtime_error: submissionsRuntimeError,
+      submissions_compilation_error: submissionsCompilationError,
+      submissions_failed_total: submissionsFailedTotal,
       average_execution_time_ms: avgTime,
-      active_runners: this.metrics.active_runners,
+      active_runners: activeRunners,
     };
   }
 

@@ -91,6 +91,11 @@ export class SubmissionWorkerService implements OnModuleInit, OnModuleDestroy {
         const result = await this.processSubmission.execute({ submissionId });
         
         this.logger.log(`✅ Submission ${submissionId} processed: ${result.status}, score: ${result.score}`);
+
+        // 📊 OBSERVABILITY: Record metrics
+        await this.observability.recordSubmission(result.status);
+        await this.observability.recordExecutionTime(result.timeMsTotal);
+
         return; // Éxito, salir
 
       } catch (error) {

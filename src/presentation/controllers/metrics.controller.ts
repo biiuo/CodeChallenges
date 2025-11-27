@@ -6,12 +6,12 @@ export class MetricsController {
   constructor(private readonly observability: ObservabilityService) {}
 
   @Get('prometheus')
-  getMetricsPrometheus(): string {
-    return this.observability.getMetricsPrometheus();
+  async getMetricsPrometheus(): Promise<string> {
+    return await this.observability.getMetricsPrometheus();
   }
 
   @Get('json')
-  getMetricsJson() {
-    return this.observability.getMetricsJson();
+  async getMetricsJson() {
+    return await this.observability.getMetricsJson();
   }
 }
