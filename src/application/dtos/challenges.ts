@@ -13,14 +13,14 @@ export class CreateTestCaseDto {
   caseNumber!: number;
 
   @ApiProperty({ 
-    example: '5 3', 
+    example: '2 7 11 15\n9', 
     description: 'Entrada del caso de prueba' 
   })
   @IsString()
   input!: string;
 
   @ApiProperty({ 
-    example: '8', 
+    example: '0 1', 
     description: 'Salida esperada del caso de prueba' 
   })
   @IsString()
@@ -46,7 +46,7 @@ export class CreateChallengeDto {
   title!: string;
 
   @ApiProperty({ 
-    example: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.', 
+    example: 'Dado un array de enteros nums y un entero target, retorna los índices de dos números que sumen target.\n\nInput:\n- Primera línea: los números del array separados por espacio.\n- Segunda línea: el valor target.\n\nOutput:\n- Los dos índices separados por espacio (orden ascendente).', 
     description: 'Descripción detallada del problema' 
   })
   @IsString()

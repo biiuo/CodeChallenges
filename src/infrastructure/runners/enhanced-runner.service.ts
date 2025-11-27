@@ -196,7 +196,7 @@ export class EnhancedRunnerService {
 
     try {
       const { stdout, stderr } = await execPromise(dockerCmd, {
-        timeout: timeLimit * 2, // Dar más tiempo para compilación
+        timeout: Math.max(timeLimit * 2, 10000), // Mínimo 10s para compilación
         maxBuffer: 10 * 1024 * 1024, // 10MB
       });
 
@@ -366,6 +366,7 @@ export class EnhancedRunnerService {
     
     const dirPath = path.join(tmpBaseDir, dirName);
     await fs.mkdir(dirPath, { recursive: true });
+    await fs.chmod(dirPath, 0o777); // Permitir escritura al usuario del contenedor (runner)
     
     return dirPath;
   }

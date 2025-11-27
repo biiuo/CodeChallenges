@@ -68,7 +68,7 @@ export class SubmissionController {
       pythonTwoSum: {
         summary: 'Python - Two Sum',
         value: {
-          code: 'def two_sum(nums, target):\n    seen = {}\n    for i, num in enumerate(nums):\n        if target - num in seen:\n            return [seen[target - num], i]\n        seen[num] = i\n    return []',
+          code: 'import sys\n\ndef two_sum(nums, target):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []\n\ndef main():\n    lines = sys.stdin.read().strip().split("\\n")\n    if len(lines) < 2: return\n    nums = list(map(int, lines[0].split()))\n    target = int(lines[1])\n    result = two_sum(nums, target)\n    result.sort()\n    print(f"{result[0]} {result[1]}")\n\nif __name__ == "__main__":\n    main()',
           language: 'python',
           challengeId: 'CH-TWOSUM'
         }
@@ -76,9 +76,25 @@ export class SubmissionController {
       javascriptTwoSum: {
         summary: 'JavaScript - Two Sum',
         value: {
-          code: 'function twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) {\n      return [map.get(complement), i];\n    }\n    map.set(nums[i], i);\n  }\n  return [];\n}',
+          code: 'const fs = require("fs");\n\nfunction twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) {\n      return [map.get(complement), i];\n    }\n    map.set(nums[i], i);\n  }\n  return [];\n}\n\nfunction main() {\n  const input = fs.readFileSync(0, "utf-8").trim().split("\\n");\n  if (input.length < 2) return;\n  const nums = input[0].trim().split(/\\s+/).map(Number);\n  const target = Number(input[1].trim());\n  \n  const result = twoSum(nums, target);\n  result.sort((a, b) => a - b);\n  console.log(`${result[0]} ${result[1]}`);\n}\n\nmain();',
           language: 'javascript',
           challengeId: 'CH-TWOSUM'
+        }
+      },
+      pythonFibonacci: {
+        summary: 'Python - Fibonacci',
+        value: {
+          code: 'import sys\n\ndef fib(n):\n    if n < 0: return -1\n    if n == 0: return 0\n    if n == 1: return 1\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b\n\ndef main():\n    try:\n        line = sys.stdin.read().strip()\n        if not line: return\n        n = int(line)\n        print(fib(n))\n    except ValueError:\n        pass\n\nif __name__ == "__main__":\n    main()',
+          language: 'python',
+          challengeId: 'CH-FIBONACCI'
+        }
+      },
+      javascriptFibonacci: {
+        summary: 'JavaScript - Fibonacci',
+        value: {
+          code: 'const fs = require("fs");\n\nfunction fib(n) {\n  if (n < 0) return -1;\n  if (n === 0) return 0;\n  if (n === 1) return 1;\n  let a = 0, b = 1;\n  for (let i = 2; i <= n; i++) {\n    let temp = a + b;\n    a = b;\n    b = temp;\n  }\n  return b;\n}\n\nfunction main() {\n  const input = fs.readFileSync(0, "utf-8").trim();\n  if (!input) return;\n  const n = parseInt(input, 10);\n  if (isNaN(n)) return;\n  console.log(fib(n));\n}\n\nmain();',
+          language: 'javascript',
+          challengeId: 'CH-FIBONACCI'
         }
       },
       cppHelloWorld: {
@@ -89,12 +105,44 @@ export class SubmissionController {
           challengeId: 'CH-ABCDE'
         }
       },
+      cppTwoSum: {
+        summary: 'C++ - Two Sum',
+        value: {
+          code: '#include <iostream>\n#include <vector>\n#include <unordered_map>\n#include <sstream>\n#include <algorithm>\n\nusing namespace std;\n\nint main() {\n    string line1, line2;\n    if (!getline(cin, line1) || !getline(cin, line2)) return 0;\n\n    stringstream ss(line1);\n    int num;\n    vector<int> nums;\n    while (ss >> num) {\n        nums.push_back(num);\n    }\n\n    int target = stoi(line2);\n    unordered_map<int, int> seen;\n\n    for (int i = 0; i < nums.size(); ++i) {\n        int complement = target - nums[i];\n        if (seen.count(complement)) {\n            int idx1 = seen[complement];\n            int idx2 = i;\n            if (idx1 > idx2) swap(idx1, idx2);\n            cout << idx1 << " " << idx2 << endl;\n            return 0;\n        }\n        seen[nums[i]] = i;\n    }\n    return 0;\n}',
+          language: 'cpp',
+          challengeId: 'CH-TWOSUM'
+        }
+      },
+      cppFibonacci: {
+        summary: 'C++ - Fibonacci',
+        value: {
+          code: '#include <iostream>\nusing namespace std;\n\nlong long fib(int n) {\n    if (n < 0) return -1;\n    if (n == 0) return 0;\n    if (n == 1) return 1;\n    long long a = 0, b = 1;\n    for (int i = 2; i <= n; ++i) {\n        long long temp = a + b;\n        a = b;\n        b = temp;\n    }\n    return b;\n}\n\nint main() {\n    int n;\n    if (cin >> n) {\n        cout << fib(n) << endl;\n    }\n    return 0;\n}',
+          language: 'cpp',
+          challengeId: 'CH-FIBONACCI'
+        }
+      },
       javaHelloWorld: {
         summary: 'Java - Hello World',
         value: {
-          code: 'public class Solution {\n    public static void main(String[] args) {\n        System.out.println("Hello World");\n    }\n}',
+          code: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello World");\n    }\n}',
           language: 'java',
           challengeId: 'CH-ABCDE'
+        }
+      },
+      javaTwoSum: {
+        summary: 'Java - Two Sum',
+        value: {
+          code: 'import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String line1 = br.readLine();\n        String line2 = br.readLine();\n        if (line1 == null || line2 == null) return;\n        String[] parts = line1.trim().split("\\\\s+");\n        int[] nums = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) {\n            nums[i] = Integer.parseInt(parts[i]);\n        }\n        int target = Integer.parseInt(line2.trim());\n        Map<Integer, Integer> seen = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            int complement = target - nums[i];\n            if (seen.containsKey(complement)) {\n                int idx1 = seen.get(complement);\n                int idx2 = i;\n                if (idx1 > idx2) { int temp = idx1; idx1 = idx2; idx2 = temp; }\n                System.out.println(idx1 + " " + idx2);\n                return;\n            }\n            seen.put(nums[i], i);\n        }\n    }\n}',
+          language: 'java',
+          challengeId: 'CH-TWOSUM'
+        }
+      },
+      javaFibonacci: {
+        summary: 'Java - Fibonacci',
+        value: {
+          code: 'import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        String line = br.readLine();\n        if (line == null) return;\n        int n = Integer.parseInt(line.trim());\n        System.out.println(fib(n));\n    }\n    \n    private static long fib(int n) {\n        if (n < 0) return -1;\n        if (n == 0) return 0;\n        if (n == 1) return 1;\n        long a = 0, b = 1;\n        for (int i = 2; i <= n; i++) {\n            long temp = a + b;\n            a = b;\n            b = temp;\n        }\n        return b;\n    }\n}',
+          language: 'java',
+          challengeId: 'CH-FIBONACCI'
         }
       }
     }

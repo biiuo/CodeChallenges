@@ -68,7 +68,7 @@ export class ChallengesController {
         summary: 'Two Sum Challenge',
         value: {
           title: 'Two Sum',
-          description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+          description: 'Dado un array de enteros nums y un entero target, retorna los índices de dos números que sumen target.\n\nInput:\n- Primera línea: los números del array separados por espacio.\n- Segunda línea: el valor target.\n\nOutput:\n- Los dos índices separados por espacio (orden ascendente).',
           difficulty: 'EASY',
           tags: ['arrays', 'hash-table'],
           timeLimit: 1000,
@@ -81,13 +81,13 @@ export class ChallengesController {
         summary: 'Fibonacci Challenge',
         value: {
           title: 'Fibonacci Sequence',
-          description: 'Write a function to calculate the nth Fibonacci number.',
+          description: 'Escribe una función que calcule el n-ésimo número de Fibonacci.\n\nLa sucesión de Fibonacci se define como:\n- F(0) = 0\n- F(1) = 1\n- F(n) = F(n-1) + F(n-2) para n > 1\n\nInput:\n- Un único número entero n (0 <= n <= 30).\n\nOutput:\n- El n-ésimo número de Fibonacci.',
           difficulty: 'MEDIUM',
-          tags: ['dynamic-programming', 'recursion'],
-          timeLimit: 2000,
-          memoryLimit: 256,
+          tags: ['dynamic-programming', 'recursion', 'math'],
+          timeLimit: 1000,
+          memoryLimit: 128,
           authorId: '00001111-2222-3333-4444-555566667777',
-          isPublic: false
+          isPublic: true
         }
       }
     }
@@ -327,11 +327,20 @@ export class ChallengesController {
     description: 'Array de casos de prueba a agregar',
     type: [CreateTestCaseDto],
     examples: {
-      simple: {
-        summary: 'Agregar 2 casos de prueba',
+      twoSum: {
+        summary: 'Agregar casos de prueba (Ejemplo Two Sum)',
         value: [
-          { caseNumber: 1, input: '2\n1 2', output: '3', visible: true },
-          { caseNumber: 2, input: '3\n10 20 30', output: '60', visible: false }
+          { caseNumber: 1, input: '2 7 11 15\n9', output: '0 1', visible: true },
+          { caseNumber: 2, input: '3 2 4\n6', output: '1 2', visible: false }
+        ]
+      },
+      fibonacci: {
+        summary: 'Agregar casos de prueba (Ejemplo Fibonacci)',
+        value: [
+          { caseNumber: 1, input: '0', output: '0', visible: true },
+          { caseNumber: 2, input: '1', output: '1', visible: true },
+          { caseNumber: 3, input: '5', output: '5', visible: true },
+          { caseNumber: 4, input: '10', output: '55', visible: false }
         ]
       }
     }
