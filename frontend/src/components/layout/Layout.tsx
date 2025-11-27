@@ -10,7 +10,7 @@ export const Layout: React.FC = () => {
         <Outlet />
       </main>
       <footer className="bg-gray-800 text-white p-4 text-center">
-        &copy; 2025 Vencer A Backend
+        &copy; 2025 CodeChallenges
       </footer>
     </div>
   );

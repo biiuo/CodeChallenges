@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../api/client';
+import { api, usersApi } from '../api/client';
 import type { User } from '../types';
 
 interface AuthContextType {
@@ -23,14 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         try {
-          // Decode token to get basic info or fetch profile
-          // Assuming the token has some info, but better to fetch /users/me
-          api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-          const { data } = await api.get('/users/me');
-          // The /users/me endpoint returns req.user which comes from the JWT strategy.
-          // It might not have all fields like name/email if the strategy only puts ID and Role.
-          // But let's assume it returns what we need or we use what we have.
-          // Based on the controller, it returns req.user.
+          const { data } = await usersApi.me();
           setUser(data);
         } catch (error) {
           console.error('Failed to fetch user profile', error);
@@ -48,10 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('refreshToken', refreshToken);
     setToken(accessToken);
     
-    // Decode token to get immediate info if needed, or fetch profile
-    // For simplicity, we'll trigger a reload or just fetch profile
-    api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-    api.get('/users/me').then(({ data }) => setUser(data)).catch(() => logout());
+    usersApi.me().then(({ data }) => setUser(data)).catch(() => logout());
   };
 
   const logout = () => {
@@ -68,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
 
 export const useAuth = () => {
   const context = useContext(AuthContext);

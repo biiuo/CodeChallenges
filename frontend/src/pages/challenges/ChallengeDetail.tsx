@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { api } from '../../api/client';
+import { challengesApi, submissionsApi } from '../../api/client';
 import type { Challenge, Submission } from '../../types';
 
 export const ChallengeDetail: React.FC = () => {
@@ -13,7 +13,7 @@ export const ChallengeDetail: React.FC = () => {
   const { data: challenge, isLoading, error } = useQuery<Challenge>({
     queryKey: ['challenge', id],
     queryFn: async () => {
-      const { data } = await api.get(`/challenges/${id}`);
+      const { data } = await challengesApi.getById(id!);
       return data;
     },
   });
@@ -21,11 +21,11 @@ export const ChallengeDetail: React.FC = () => {
   const onSubmit = async (data: any) => {
     try {
       const payload = {
-        challengeId: id,
+        challengeId: id!,
         code: data.code,
         language: data.language,
       };
-      const response = await api.post('/submissions', payload);
+      const response = await submissionsApi.create(payload);
       setSubmissionResult(response.data);
       reset();
     } catch (err) {
@@ -33,6 +33,7 @@ export const ChallengeDetail: React.FC = () => {
       alert('Submission failed');
     }
   };
+
 
   if (isLoading) return <div>Loading...</div>;
   if (error || !challenge) return <div>Error loading challenge</div>;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../../api/client';
+import { authApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthResponse } from '../../types';
 
@@ -13,13 +13,14 @@ export const Login: React.FC = () => {
 
   const onSubmit = async (data: any) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/login', data);
+      const response = await authApi.login(data);
       login(response.data.access, response.data.refresh);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid credentials');
     }
   };
+
 
   return (
     <div className="max-w-md mx-auto mt-10 bg-white p-8 rounded-lg shadow-md">

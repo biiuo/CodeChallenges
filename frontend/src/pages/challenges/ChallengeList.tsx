@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { api } from '../../api/client';
+import { challengesApi } from '../../api/client';
 import type { Challenge } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
@@ -10,10 +10,11 @@ export const ChallengeList: React.FC = () => {
   const { data: challenges, isLoading, error } = useQuery<Challenge[]>({
     queryKey: ['challenges'],
     queryFn: async () => {
-      const { data } = await api.get('/challenges');
+      const { data } = await challengesApi.getAll();
       return data;
     },
   });
+
 
   if (isLoading) return <div className="text-center p-4">Loading challenges...</div>;
   if (error) return <div className="text-center text-red-500 p-4">Error loading challenges</div>;

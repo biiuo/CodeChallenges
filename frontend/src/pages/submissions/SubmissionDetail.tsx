@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../api/client';
+import { submissionsApi } from '../../api/client';
 import type { Submission } from '../../types';
 
 export const SubmissionDetail: React.FC = () => {
@@ -9,10 +9,11 @@ export const SubmissionDetail: React.FC = () => {
   const { data: submission, isLoading, error } = useQuery<Submission>({
     queryKey: ['submission', id],
     queryFn: async () => {
-      const { data } = await api.get(`/submissions/${id}`);
+      const { data } = await submissionsApi.getById(Number(id));
       return data;
     },
   });
+
 
   if (isLoading) return <div>Loading...</div>;
   if (error || !submission) return <div>Error loading submission</div>;

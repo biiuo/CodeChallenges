@@ -50,8 +50,18 @@ export interface CreateCourseDto {
   code: string;
   name: string;
   period: string;
-  professorCode: string[];
+  professorCode?: string[];
 }
+
+export type SubmissionStatus = 
+  | 'QUEUED' 
+  | 'RUNNING' 
+  | 'ACCEPTED' 
+  | 'WRONG_ANSWER' 
+  | 'TIME_LIMIT_EXCEEDED' 
+  | 'MEMORY_LIMIT_EXCEEDED' 
+  | 'RUNTIME_ERROR' 
+  | 'COMPILATION_ERROR';
 
 export interface Submission {
   id: number;
@@ -59,7 +69,7 @@ export interface Submission {
   challengeId: string;
   code: string;
   language: string;
-  status: 'QUEUED' | 'RUNNING' | 'ACCEPTED' | 'WRONG_ANSWER' | 'TIME_LIMIT_EXCEEDED' | 'RUNTIME_ERROR' | 'COMPILATION_ERROR';
+  status: SubmissionStatus;
   score?: number;
   timeMsTotal?: number;
   createdAt: string;
@@ -70,3 +80,23 @@ export interface CreateSubmissionDto {
   code: string;
   language: string;
 }
+
+export interface TestCaseResult {
+  caseId: number;
+  caseNumber: number;
+  status: 'PASSED' | 'FAILED';
+  timeMsElapsed: number;
+  input: string;
+  expectedOutput: string;
+  actualOutput: string;
+  visible: boolean;
+}
+
+export interface SubmissionResult {
+  status: SubmissionStatus;
+  score: number;
+  totalTimeMs: number;
+  cases: TestCaseResult[];
+}
+
+

@@ -14,7 +14,7 @@ export const Navbar: React.FC = () => {
   return (
     <nav className="bg-gray-800 text-white p-4">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-xl font-bold">Vencer A Backend</Link>
+        <Link to="/" className="text-xl font-bold">CodeChallenges</Link>
         <div className="flex gap-4 items-center">
           {user ? (
             <>

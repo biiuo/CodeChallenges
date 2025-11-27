@@ -1,16 +1,17 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../api/client';
+import { coursesApi } from '../../api/client';
 import type { Course } from '../../types';
 
 export const CourseList: React.FC = () => {
   const { data: courses, isLoading, error } = useQuery<Course[]>({
     queryKey: ['courses'],
     queryFn: async () => {
-      const { data } = await api.get('/courses');
+      const { data } = await coursesApi.getAll();
       return data;
     },
   });
+
 
   if (isLoading) return <div className="text-center p-4">Loading courses...</div>;
   if (error) return <div className="text-center text-red-500 p-4">Error loading courses</div>;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../../api/client';
+import { challengesApi } from '../../api/client';
 
 export const CreateChallenge: React.FC = () => {
   const { register, handleSubmit } = useForm();
@@ -17,13 +17,14 @@ export const CreateChallenge: React.FC = () => {
         memoryLimit: parseInt(data.memoryLimit),
         isPublic: data.isPublic === 'true',
       };
-      await api.post('/challenges', payload);
+      await challengesApi.create(payload);
       navigate('/challenges');
     } catch (err) {
       console.error('Failed to create challenge', err);
       alert('Failed to create challenge');
     }
   };
+
 
   return (
     <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow">
