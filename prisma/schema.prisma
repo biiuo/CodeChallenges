@@ -140,7 +140,7 @@ model Testcase {
   output      String                                  // Salida
   visible     Boolean   @default(false)               // Indica si el caso es visible
 
-  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
 
   @@id([challengeId, caseNumber])

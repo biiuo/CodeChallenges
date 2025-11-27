@@ -8,6 +8,7 @@ import {
   Param,
   ParseIntPipe,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -121,7 +122,9 @@ export class ChallengesController {
       }
     }
   })
-  async create(@Body() data: CreateChallengeDto) {
+  async create(@Body() data: CreateChallengeDto, @Req() req: any) {
+    // Asignar el ID del usuario autenticado como autor del reto
+    data.authorId = req.user.userId;
     return await this.createChallengeUseCase.execute(data);
   }
 

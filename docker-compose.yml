@@ -86,5 +86,20 @@ services:
     depends_on:
       - redis
 
+  frontend:
+    container_name: frontend_proyecto_final
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+
 volumes:
   pgdata:
