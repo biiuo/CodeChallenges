@@ -108,6 +108,8 @@ export class PrismaChallengeRepository implements ChallengeRepository {
         status: data.status,
         isPublic: data.isPublic,
         authorId: data.authorId,
+        solutionCode: (data as any).solutionCode,
+        solutionLanguage: (data as any).solutionLanguage,
       },
       include: {
         testcases: true

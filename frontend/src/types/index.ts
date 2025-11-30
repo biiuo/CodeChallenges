@@ -21,6 +21,8 @@ export interface Challenge {
   memoryLimit: number;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   isPublic: boolean;
+  solutionCode?: string;
+  solutionLanguage?: string;
   authorId: string;
   createdAt: string;
   updatedAt: string;

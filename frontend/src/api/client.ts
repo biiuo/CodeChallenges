@@ -78,6 +78,7 @@ export const challengesApi = {
   update: (id: string, data: Partial<CreateChallengeDto>) => api.put<Challenge>(`/challenges/${id}`, data),
   delete: (id: string) => api.delete(`/challenges/${id}`),
   addTestCases: (id: string, data: any[]) => api.post(`/challenges/${id}/testcases`, data),
+  uploadSolution: (id: string, data: { code: string; language: string }) => api.post(`/challenges/${id}/solution`, data),
 };
 
 export const submissionsApi = {

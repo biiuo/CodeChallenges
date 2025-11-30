@@ -294,16 +294,27 @@ export class SubmissionController {
   @Get()
   @ApiOperation({ 
     summary: 'Listar submissions del usuario',
-    description: `Lista todos los submissions del usuario autenticado, ordenados por fecha de creación (más recientes primero).
+    description: `Lista submissions según el rol del usuario autenticado, ordenados por fecha de creación (más recientes primero).
+
+**Roles y permisos:**
+- **STUDENT**: Solo ve sus propios submissions. Puede filtrar por courseId, challengeId, status, language.
+- **PROFESSOR**: Ve todos los submissions. Puede filtrar por userId, courseId, challengeId, status, language.
+- **ADMIN**: Ve todos los submissions. Puede filtrar por userId, courseId, challengeId, status, language.
+
+**Filtros disponibles:**
+- \`courseId\`: Filtrar por curso
+- \`userId\`: Filtrar por usuario (solo PROFESSOR/ADMIN)
+- \`challengeId\`: Filtrar por reto
+- \`status\`: Filtrar por estado (QUEUED, RUNNING, ACCEPTED, etc.)
+- \`language\`: Filtrar por lenguaje (python, javascript, cpp, java)
+- \`evaluationId\`: Filtrar por evaluación
 
 **Información incluida:**
 - Historial completo de submissions
 - Estado actual de cada submission
 - Puntaje obtenido
 - Tiempo de ejecución
-- Lenguaje utilizado
-
-**Nota:** Solo retorna los submissions del usuario autenticado (basado en el token JWT).`
+- Lenguaje utilizado`
   })
   @ApiOkResponse({ 
     description: '✅ Lista de submissions obtenida exitosamente',
@@ -316,6 +327,7 @@ export class SubmissionController {
           id: 125,
           userId: '00001111-2222-3333-4444-555566667777',
           challengeId: 'CH-TWOSUM',
+          courseId: 'course-123',
           language: 'python',
           status: 'ACCEPTED',
           score: 100,
@@ -328,34 +340,58 @@ export class SubmissionController {
   async listSubmissions(
     @Request() req: any,
     @Query('userId') filterUserId?: string,
+    @Query('courseId') courseId?: string,
     @Query('challengeId') challengeId?: string,
     @Query('status') status?: string,
     @Query('language') language?: string,
+    @Query('evaluationId') evaluationId?: string,
   ): Promise<Submission[]> {
     const userId = req.user.userId;
     const userRole = req.user.role;
 
-    // Si es admin/profesor y hay filtros, usar búsqueda global
-    if ((userRole === 'ADMIN' || userRole === 'PROFESSOR') && (filterUserId || challengeId || status || language)) {
+    // Construir filtros base según el rol
+    const where: any = {};
+
+    if (courseId) {
+      where.courseId = courseId;
+    }
+
+    if (challengeId) {
+      where.challengeId = challengeId;
+    }
+
+    if (status) {
+      where.status = status as any;
+    }
+
+    if (language) {
+      where.language = language;
+    }
+
+    if (evaluationId) {
+      where.evaluationId = parseInt(evaluationId, 10);
+    }
+
+    // STUDENT: Solo puede ver sus propios submissions
+    if (userRole === 'STUDENT') {
+      where.userId = userId;
       const results = await this.prisma.submission.findMany({
-        where: {
-          userId: filterUserId || undefined,
-          challengeId: challengeId || undefined,
-          status: status as any || undefined,
-          language: language || undefined,
-        },
+        where,
         orderBy: { createdAt: 'desc' },
       });
       return results.map(SubmissionMapper.toDomain);
     }
 
-    // Si es admin/profesor sin filtros, retornar todas
-    if (userRole === 'ADMIN' || userRole === 'PROFESSOR') {
-      return this.submissionRepo.findAll();
+    // PROFESSOR/ADMIN: Pueden ver todos los submissions con filtros opcionales
+    if (filterUserId) {
+      where.userId = filterUserId;
     }
 
-    // Estudiantes solo ven sus propios submissions
-    return this.submissionRepo.findByUser(userId);
+    const results = await this.prisma.submission.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+    return results.map(SubmissionMapper.toDomain);
   }
 
   /**

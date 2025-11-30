@@ -9,6 +9,8 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -55,6 +57,7 @@ export class ChallengesController {
   ) {}
 
   @Post()
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN, Role.PROFESSOR)
   @ApiOperation({ 
@@ -125,6 +128,17 @@ export class ChallengesController {
   async create(@Body() data: CreateChallengeDto, @Req() req: any) {
     // Asignar el ID del usuario autenticado como autor del reto
     data.authorId = req.user.userId;
+    
+    // Asegurar que difficulty tenga un valor por defecto
+    if (!data.difficulty) {
+      data.difficulty = 'EASY' as any;
+    }
+    
+    // Asegurar que tags sea un array válido
+    if (!data.tags || !Array.isArray(data.tags) || data.tags.length === 0) {
+      data.tags = ['general'];
+    }
+    
     return await this.createChallengeUseCase.execute(data);
   }
 
@@ -175,7 +189,7 @@ export class ChallengesController {
   @Get(':id')
   @ApiOperation({ 
     summary: 'Obtener un reto por ID',
-    description: 'Devuelve los detalles de un reto específico. Disponible para todos los usuarios autenticados.'
+    description: 'Devuelve los detalles de un reto específico. Disponible para todos los usuarios autenticados. Los estudiantes pueden ver el código de solución si está disponible.'
   })
   @ApiParam({
     name: 'id',
@@ -195,6 +209,8 @@ export class ChallengesController {
         memoryLimit: 128,
         status: 'PUBLISHED',
         isPublic: true,
+        solutionCode: 'def two_sum(nums, target):\n    ...',
+        solutionLanguage: 'python',
         authorId: '00001111-2222-3333-4444-555566667777',
         createdAt: '2025-10-29T10:30:00.000Z',
         updatedAt: '2025-10-29T10:30:00.000Z'
@@ -202,8 +218,19 @@ export class ChallengesController {
     }
   })
   @ApiNotFoundResponse({ description: 'Reto no encontrado' })
-  async findOne(@Param('id') id: string) {
-    return await this.getChallengeByIdUseCase.execute(id);
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    const challenge = await this.getChallengeByIdUseCase.execute(id);
+    const userRole = req.user?.role;
+    
+    // Solo estudiantes pueden ver el código de solución
+    // Profesores y admin pueden ver todo
+    if (userRole === 'STUDENT') {
+      // El código de solución ya viene en el challenge si existe
+      return challenge;
+    }
+    
+    // Para profesores y admin, incluir también el código de solución
+    return challenge;
   }
 
   @Put(':id')
@@ -309,6 +336,59 @@ export class ChallengesController {
   @ApiForbiddenResponse({ description: 'Sin permisos. Solo ADMIN y PROFESSOR pueden eliminar retos.' })
   async delete(@Param('id') id: string) {
     return await this.deleteChallengeUseCase.execute(id);
+  }
+
+  @Post(':id/solution')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @ApiOperation({ 
+    summary: 'Subir código de solución de referencia',
+    description: 'Sube el código de solución de referencia para un reto. Solo disponible para ADMIN y PROFESSOR. Los estudiantes podrán ver este código en los detalles del challenge.'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del reto',
+    example: 'CH-ABCDE',
+  })
+  @ApiBody({
+    description: 'Código de solución y lenguaje',
+    schema: {
+      example: {
+        code: 'def two_sum(nums, target):\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []',
+        language: 'python'
+      }
+    }
+  })
+  @ApiOkResponse({ 
+    description: 'Código de solución subido exitosamente',
+    schema: {
+      example: {
+        message: 'Solution code uploaded successfully',
+        challengeId: 'CH-ABCDE'
+      }
+    }
+  })
+  @ApiNotFoundResponse({ description: 'Reto no encontrado' })
+  @ApiForbiddenResponse({ description: 'Sin permisos. Solo ADMIN y PROFESSOR pueden subir código de solución.' })
+  async uploadSolution(
+    @Param('id') challengeId: string,
+    @Body() body: { code: string; language: string },
+  ) {
+    const challenge = await this.challengeRepo.findById(challengeId);
+    if (!challenge) {
+      throw new Error(`Challenge ${challengeId} not found`);
+    }
+    
+    // Actualizar el challenge con el código de solución
+    await this.updateChallengeUseCase.execute(challengeId, {
+      solutionCode: body.code,
+      solutionLanguage: body.language,
+    });
+    
+    return {
+      message: 'Solution code uploaded successfully',
+      challengeId,
+    };
   }
 
   @Post(':id/testcases')

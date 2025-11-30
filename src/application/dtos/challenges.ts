@@ -60,16 +60,18 @@ export class CreateChallengeDto {
   })
   @IsOptional()
   @IsEnum(Difficulty)
-  difficulty!: Difficulty | null;
+  difficulty?: Difficulty;
 
   @ApiProperty({ 
     example: ['arrays', 'hash-table'], 
     description: 'Etiquetas temáticas del reto',
-    type: [String]
+    type: [String],
+    required: false
   })
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  tags!: string[];
+  tags?: string[];
 
   @ApiProperty({ 
     example: 1000, 
@@ -178,4 +180,20 @@ export class UpdateChallengeDto {
   @IsOptional()
   @IsString()
   courseCode?: string;
+
+  @ApiProperty({ 
+    required: false,
+    description: 'Código de solución de referencia'
+  })
+  @IsOptional()
+  @IsString()
+  solutionCode?: string;
+
+  @ApiProperty({ 
+    required: false,
+    description: 'Lenguaje del código de solución (python, javascript, cpp, java)'
+  })
+  @IsOptional()
+  @IsString()
+  solutionLanguage?: string;
 }

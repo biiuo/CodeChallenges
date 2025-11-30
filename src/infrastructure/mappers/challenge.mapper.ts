@@ -19,7 +19,7 @@ export class ChallengeMapper {
       createdAt: tc.createdAt,
     }));
 
-    return new Challenge(
+    const challenge = new Challenge(
       prismaChallenge.id,
       prismaChallenge.title,
       prismaChallenge.description,
@@ -32,6 +32,16 @@ export class ChallengeMapper {
       prismaChallenge.authorId,
       testCases,
     );
+    
+    // Agregar campos opcionales de solución
+    if ((prismaChallenge as any).solutionCode) {
+      (challenge as any).solutionCode = (prismaChallenge as any).solutionCode;
+    }
+    if ((prismaChallenge as any).solutionLanguage) {
+      (challenge as any).solutionLanguage = (prismaChallenge as any).solutionLanguage;
+    }
+    
+    return challenge;
   }
 
   static toPrisma(domainChallenge: Challenge): Omit<PrismaChallenge, 'createdAt' | 'updatedAt'> {

@@ -24,18 +24,19 @@ class UpdateCourseDto {
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('courses')
 export class CoursesController {
-    @Get('my')
-    @Roles('STUDENT')
-    @ApiOperation({ summary: 'Obtener mis cursos (solo estudiante)' })
-    async getMyCourses(@Req() req: any) {
-      const userId = req.user?.userId;
-      if (!userId) throw new Error('No userId');
-      return this.prisma.course.findMany({
-        where: { students: { some: { userId } } },
-        select: { id: true, code: true, name: true, period: true, description: true, isPublished: true }
-      });
-    }
   constructor(private readonly prisma: PrismaService) {}
+
+  @Get('my')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: 'Obtener mis cursos (solo estudiante)' })
+  async getMyCourses(@Req() req: any) {
+    const userId = req.user?.userId;
+    if (!userId) throw new Error('No userId');
+    return this.prisma.course.findMany({
+      where: { students: { some: { userId } } },
+      select: { id: true, code: true, name: true, period: true, description: true, isPublished: true }
+    });
+  }
 
   @Post()
   @Roles('ADMIN','PROFESSOR')
@@ -224,22 +225,47 @@ export class CoursesController {
   @Get(':id/submissions')
   @Roles('ADMIN','PROFESSOR')
   @UseGuards(IsProfessorOfCourseGuard)
-  @ApiOperation({ summary: 'Listar submissions del curso con filtros' })
+  @ApiOperation({ summary: 'Listar submissions del curso con filtros (ADMIN/PROFESSOR)' })
   @ApiOkResponse({ description: 'Lista de submissions' })
   async listSubmissions(
     @Param('id') id: string,
     @Query('studentId') studentId?: string,
     @Query('challengeId') challengeId?: string,
     @Query('status') status?: string,
+    @Query('evaluationId') evaluationId?: string,
   ) {
+    const where: any = { courseId: id };
+    
+    if (studentId) {
+      where.userId = studentId;
+    }
+    
+    if (challengeId) {
+      where.challengeId = challengeId;
+    }
+    
+    if (status) {
+      where.status = status as any;
+    }
+    
+    if (evaluationId) {
+      where.evaluationId = parseInt(evaluationId, 10);
+    }
+    
     return this.prisma.submission.findMany({
-      where: {
-        courseId: id,
-        userId: studentId || undefined,
-        challengeId: challengeId || undefined,
-        status: status as any || undefined,
-      },
+      where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: { id: true, name: true, username: true, email: true }
+        },
+        challenge: {
+          select: { id: true, title: true, difficulty: true }
+        },
+        evaluation: {
+          select: { id: true, name: true, evaluationNumber: true }
+        }
+      }
     });
   }
 
@@ -255,9 +281,79 @@ export class CoursesController {
   @Roles('STUDENT')
   @UseGuards(IsStudentOfCourseGuard)
   @ApiOperation({ summary: 'Listar mis submissions en el curso (STUDENT)' })
-  async listMySubmissions(@Param('id') id: string, @Req() req: any) {
+  async listMySubmissions(
+    @Param('id') id: string, 
+    @Req() req: any,
+    @Query('evaluationId') evaluationId?: string,
+    @Query('challengeId') challengeId?: string,
+    @Query('status') status?: string,
+  ) {
     const userId = req.user?.userId;
-    return this.prisma.submission.findMany({ where: { courseId: id, userId }, orderBy: { createdAt: 'desc' } });
+    const where: any = { courseId: id, userId };
+    
+    if (evaluationId) {
+      where.evaluationId = parseInt(evaluationId, 10);
+    }
+    
+    if (challengeId) {
+      where.challengeId = challengeId;
+    }
+    
+    if (status) {
+      where.status = status as any;
+    }
+    
+    return this.prisma.submission.findMany({ 
+      where, 
+      orderBy: { createdAt: 'desc' },
+      include: {
+        challenge: {
+          select: { id: true, title: true, difficulty: true }
+        },
+        evaluation: {
+          select: { id: true, name: true, evaluationNumber: true }
+        }
+      }
+    });
+  }
+
+  @Get(':id/evaluations/:evaluationId/submissions')
+  @Roles('STUDENT')
+  @UseGuards(IsStudentOfCourseGuard)
+  @ApiOperation({ summary: 'Listar submissions de una evaluación específica del curso (STUDENT - solo propias)' })
+  async listMySubmissionsByEvaluation(
+    @Param('id') courseId: string,
+    @Param('evaluationId') evaluationId: string,
+    @Req() req: any
+  ) {
+    const userId = req.user?.userId;
+    
+    // Verificar que la evaluación pertenezca al curso
+    const evaluation = await this.prisma.evaluation.findUnique({
+      where: { id: parseInt(evaluationId, 10) },
+      select: { courseId: true }
+    });
+    
+    if (!evaluation || evaluation.courseId !== courseId) {
+      throw new Error('Evaluation not found in this course');
+    }
+    
+    return this.prisma.submission.findMany({ 
+      where: { 
+        courseId,
+        evaluationId: parseInt(evaluationId, 10),
+        userId 
+      }, 
+      orderBy: { createdAt: 'desc' },
+      include: {
+        challenge: {
+          select: { id: true, title: true, difficulty: true }
+        },
+        testResults: {
+          select: { caseNumber: true, status: true, timeMs: true }
+        }
+      }
+    });
   }
 
   @Delete(':id/challenges/:challengeId')
@@ -389,5 +485,203 @@ export class CoursesController {
   ) {
     await this.prisma.lessonResource.delete({ where: { id: resourceId } });
     return { ok: true };
+  }
+
+  // ============================================
+  // ESTADÍSTICAS Y REPORTES
+  // ============================================
+
+  @Get(':id/statistics')
+  @Roles('ADMIN','PROFESSOR')
+  @UseGuards(IsProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Obtener estadísticas del curso (ADMIN/PROFESSOR)' })
+  async getCourseStatistics(@Param('id') courseId: string) {
+    const totalStudents = await this.prisma.courseStudent.count({
+      where: { courseId }
+    });
+
+    const totalChallenges = await this.prisma.challenge.count({
+      where: { courses: { some: { id: courseId } } }
+    });
+
+    const totalSubmissions = await this.prisma.submission.count({
+      where: { courseId }
+    });
+
+    const acceptedSubmissions = await this.prisma.submission.count({
+      where: { courseId, status: 'ACCEPTED' }
+    });
+
+    const submissionsByStatus = await this.prisma.submission.groupBy({
+      by: ['status'],
+      where: { courseId },
+      _count: { status: true }
+    });
+
+    const submissionsByLanguage = await this.prisma.submission.groupBy({
+      by: ['language'],
+      where: { courseId },
+      _count: { language: true }
+    });
+
+    const averageScore = await this.prisma.submission.aggregate({
+      where: { 
+        courseId,
+        score: { not: null }
+      },
+      _avg: { score: true }
+    });
+
+    return {
+      totalStudents,
+      totalChallenges,
+      totalSubmissions,
+      acceptedSubmissions,
+      acceptanceRate: totalSubmissions > 0 ? (acceptedSubmissions / totalSubmissions * 100).toFixed(2) : 0,
+      averageScore: averageScore._avg.score ? Math.round(averageScore._avg.score) : 0,
+      submissionsByStatus: submissionsByStatus.map(s => ({
+        status: s.status,
+        count: s._count.status
+      })),
+      submissionsByLanguage: submissionsByLanguage.map(l => ({
+        language: l.language,
+        count: l._count.language
+      }))
+    };
+  }
+
+  @Get(':id/students/:studentId/statistics')
+  @Roles('ADMIN','PROFESSOR','STUDENT')
+  @UseGuards(IsMemberOrProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Obtener estadísticas de un estudiante en el curso' })
+  async getStudentStatistics(
+    @Param('id') courseId: string,
+    @Param('studentId') studentId: string,
+    @Req() req: any
+  ) {
+    const role = req.user?.role;
+    const userId = req.user?.userId;
+
+    // STUDENT: Solo puede ver sus propias estadísticas
+    if (role === 'STUDENT' && userId !== studentId) {
+      throw new Error('You can only view your own statistics');
+    }
+
+    const totalSubmissions = await this.prisma.submission.count({
+      where: { courseId, userId: studentId }
+    });
+
+    const acceptedSubmissions = await this.prisma.submission.count({
+      where: { courseId, userId: studentId, status: 'ACCEPTED' }
+    });
+
+    const submissionsByChallenge = await this.prisma.submission.groupBy({
+      by: ['challengeId'],
+      where: { courseId, userId: studentId },
+      _count: { challengeId: true },
+      _max: { score: true }
+    });
+
+    const averageScore = await this.prisma.submission.aggregate({
+      where: { 
+        courseId,
+        userId: studentId,
+        score: { not: null }
+      },
+      _avg: { score: true }
+    });
+
+    const bestSubmissions = await this.prisma.submission.findMany({
+      where: { 
+        courseId, 
+        userId: studentId,
+        status: 'ACCEPTED'
+      },
+      orderBy: { score: 'desc' },
+      take: 5,
+      include: {
+        challenge: {
+          select: { id: true, title: true, difficulty: true }
+        }
+      }
+    });
+
+    return {
+      totalSubmissions,
+      acceptedSubmissions,
+      acceptanceRate: totalSubmissions > 0 ? (acceptedSubmissions / totalSubmissions * 100).toFixed(2) : 0,
+      averageScore: averageScore._avg.score ? Math.round(averageScore._avg.score) : 0,
+      challengesAttempted: submissionsByChallenge.length,
+      submissionsByChallenge: submissionsByChallenge.map(s => ({
+        challengeId: s.challengeId,
+        attempts: s._count.challengeId,
+        bestScore: s._max.score
+      })),
+      bestSubmissions: bestSubmissions.map(s => ({
+        id: s.id,
+        challenge: s.challenge,
+        score: s.score,
+        timeMsTotal: s.timeMsTotal,
+        createdAt: s.createdAt
+      }))
+    };
+  }
+
+  @Get(':id/evaluations')
+  @Roles('ADMIN','PROFESSOR','STUDENT')
+  @UseGuards(IsMemberOrProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Listar evaluaciones del curso' })
+  async listEvaluations(@Param('id') courseId: string, @Req() req: any) {
+    const role = req.user?.role;
+    const userId = req.user?.userId;
+
+    const evaluations = await this.prisma.evaluation.findMany({
+      where: { courseId },
+      include: {
+        challenges: {
+          include: {
+            challenge: {
+              select: { id: true, title: true, difficulty: true }
+            }
+          }
+        },
+        _count: {
+          select: { submissions: true }
+        }
+      },
+      orderBy: { evaluationNumber: 'asc' }
+    });
+
+    // Para estudiantes, agregar información de sus submissions
+    if (role === 'STUDENT' && userId) {
+      const evaluationsWithStudentData = await Promise.all(
+        evaluations.map(async (evaluation) => {
+          const studentSubmissions = await this.prisma.submission.findMany({
+            where: {
+              evaluationId: evaluation.id,
+              userId
+            },
+            select: {
+              id: true,
+              status: true,
+              score: true,
+              challengeId: true,
+              createdAt: true
+            }
+          });
+
+          return {
+            ...evaluation,
+            studentSubmissions,
+            studentTotalScore: studentSubmissions.reduce((sum, s) => sum + (s.score || 0), 0),
+            studentCompleted: studentSubmissions.length > 0
+          };
+        })
+      );
+
+      return evaluationsWithStudentData;
+    }
+
+    return evaluations;
   }
 }

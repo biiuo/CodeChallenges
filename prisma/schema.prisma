@@ -125,6 +125,8 @@ model Challenge {
   memoryLimit Int                                  // Límite de memoria (MB)
   status      ChallengeStatus @default(DRAFT)
   isPublic    Boolean         @default(false)
+  solutionCode String?                             // Código de solución de referencia (solo visible para estudiantes)
+  solutionLanguage String?                         // Lenguaje del código de solución (python, javascript, cpp, java)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
