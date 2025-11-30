@@ -4,11 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { challengesApi, submissionsApi } from '../../api/client';
 import type { Challenge, Submission } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 export const ChallengeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const { register, handleSubmit, reset } = useForm();
   const [submissionResult, setSubmissionResult] = React.useState<Submission | null>(null);
+  const [testCasesJson, setTestCasesJson] = React.useState('');
 
   const { data: challenge, isLoading, error } = useQuery<Challenge>({
     queryKey: ['challenge', id],
@@ -31,6 +34,22 @@ export const ChallengeDetail: React.FC = () => {
     } catch (err) {
       console.error('Submission failed', err);
       alert('Submission failed');
+    }
+  };
+
+  const handleUploadTestCases = async () => {
+    try {
+      const testCases = JSON.parse(testCasesJson);
+      if (!Array.isArray(testCases)) {
+        alert('Test cases must be an array');
+        return;
+      }
+      await challengesApi.addTestCases(id!, testCases);
+      alert('Test cases uploaded successfully');
+      setTestCasesJson('');
+    } catch (err) {
+      console.error('Failed to upload test cases', err);
+      alert('Failed to upload test cases. Ensure valid JSON.');
     }
   };
 
@@ -60,6 +79,33 @@ export const ChallengeDetail: React.FC = () => {
             <div>Memory Limit: {challenge.memoryLimit}MB</div>
           </div>
         </div>
+
+        {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR') && (
+          <div className="bg-white p-6 rounded-lg shadow mt-6">
+            <h2 className="text-xl font-bold mb-4">Manage Test Cases</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload Test Cases (JSON Array)
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Format: <code>[{`{"input": "...", "expectedOutput": "...", "visible": true}`}]</code>
+              </p>
+              <textarea
+                value={testCasesJson}
+                onChange={(e) => setTestCasesJson(e.target.value)}
+                rows={6}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border font-mono"
+                placeholder='[{"input": "1 2", "expectedOutput": "3", "visible": true}]'
+              />
+            </div>
+            <button
+              onClick={handleUploadTestCases}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Upload Test Cases
+            </button>
+          </div>
+        )}
       </div>
 
       <div>

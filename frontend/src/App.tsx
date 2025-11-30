@@ -10,6 +10,7 @@ import { Dashboard } from './pages/dashboard/Dashboard';
 import { ChallengeList } from './pages/challenges/ChallengeList';
 import { ChallengeDetail } from './pages/challenges/ChallengeDetail';
 import { CreateChallenge } from './pages/challenges/CreateChallenge';
+import { EditChallenge } from './pages/challenges/EditChallenge';
 import { CourseList } from './pages/courses/CourseList';
 import { SubmissionList } from './pages/submissions/SubmissionList';
 import { SubmissionDetail } from './pages/submissions/SubmissionDetail';
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/challenges" element={<ChallengeList />} />
                 <Route path="/challenges/create" element={<CreateChallenge />} />
+                <Route path="/challenges/edit/:id" element={<EditChallenge />} />
                 <Route path="/challenges/:id" element={<ChallengeDetail />} />
                 <Route path="/courses" element={<CourseList />} />
                 <Route path="/submissions" element={<SubmissionList />} />

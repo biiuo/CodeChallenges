@@ -1,5 +1,5 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { challengesApi } from '../../api/client';
 import type { Challenge } from '../../types';
@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export const ChallengeList: React.FC = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data: challenges, isLoading, error } = useQuery<Challenge[]>({
     queryKey: ['challenges'],
     queryFn: async () => {
@@ -14,6 +15,18 @@ export const ChallengeList: React.FC = () => {
       return data;
     },
   });
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this challenge?')) {
+      try {
+        await challengesApi.delete(id);
+        queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      } catch (err) {
+        console.error('Failed to delete challenge', err);
+        alert('Failed to delete challenge');
+      }
+    }
+  };
 
 
   if (isLoading) return <div className="text-center p-4">Loading challenges...</div>;
@@ -53,12 +66,30 @@ export const ChallengeList: React.FC = () => {
                 </span>
               ))}
             </div>
-            <Link
-              to={`/challenges/${challenge.id}`}
-              className="block text-center bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
-            >
-              View Details
-            </Link>
+            <div className="flex gap-2 mt-4">
+              <Link
+                to={`/challenges/${challenge.id}`}
+                className="flex-1 text-center bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
+              >
+                View
+              </Link>
+              {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR') && (
+                <>
+                  <Link
+                    to={`/challenges/edit/${challenge.id}`}
+                    className="flex-1 text-center bg-yellow-500 text-white py-2 rounded hover:bg-yellow-600"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(challenge.id)}
+                    className="flex-1 text-center bg-red-500 text-white py-2 rounded hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>
