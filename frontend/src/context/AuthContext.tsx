@@ -5,7 +5,7 @@ import type { User } from '../types';
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string, refreshToken: string) => void;
+  login: (token: string, refreshToken: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -36,12 +36,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = (accessToken: string, refreshToken: string) => {
+  const login = async (accessToken: string, refreshToken: string) => {
     localStorage.setItem('token', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     setToken(accessToken);
     
-    usersApi.me().then(({ data }) => setUser(data)).catch(() => logout());
+    try {
+      const { data } = await usersApi.me();
+      setUser(data);
+    } catch (error) {
+      logout();
+      throw error;
+    }
   };
 
   const logout = () => {

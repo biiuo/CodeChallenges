@@ -14,7 +14,7 @@ export const Login: React.FC = () => {
   const onSubmit = async (data: any) => {
     try {
       const response = await authApi.login(data);
-      login(response.data.access, response.data.refresh);
+      await login(response.data.access, response.data.refresh);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid credentials');

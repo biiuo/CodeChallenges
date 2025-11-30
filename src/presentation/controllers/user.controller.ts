@@ -1,6 +1,8 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards, Inject, NotFoundException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { USER_REPOSITORY } from '../../application/tokens';
+import type { UserRepository } from '../../domain/repositories/user.repository';
 
 class UserProfileDoc {
   userId: string;
@@ -12,6 +14,10 @@ class UserProfileDoc {
 @UseGuards(AuthGuard('jwt'))
 @Controller('users')
 export class UsersController {
+
+  constructor(
+    @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
+  ) {}
 
   @Get('me')
   @ApiOperation({
@@ -32,7 +38,19 @@ export class UsersController {
   @ApiUnauthorizedResponse({
     description: 'Token inválido o no proporcionado',
   })
-  me(@Req() req: any) {
-    return req.user;
+  async me(@Req() req: any) {
+    const user = await this.userRepository.findById(req.user.userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    
+    return {
+      id: user.id,
+      name: user.name,
+      code: user.code,
+      username: user.username,
+      email: user.email,
+      role: user.role
+    };
   }
 }
