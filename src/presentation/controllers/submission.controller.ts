@@ -11,6 +11,7 @@ import {
   HttpStatus,
   ParseIntPipe,
   Logger,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -29,8 +30,10 @@ import { CreateSubmissionUseCase } from 'src/application/usesCases/submission/cr
 import { PrismaSubmissionRepository } from 'src/infrastructure/repositories/prisma-submission.repository';
 import { PrismaChallengeRepository } from 'src/infrastructure/repositories/prisma-challenge.repository';
 import { ObservabilityService } from 'src/infrastructure/observability/observability.service';
+import { PrismaService } from 'src/infrastructure/persistence/prisma.service';
 import { Submission, SubmissionStatus } from 'src/domain/entities/submission.entity';
 import { CreateSubmissionDto, SubmissionResponseDto } from 'src/application/dtos/submission';
+import { SubmissionMapper } from 'src/infrastructure/mappers/submission.mapper';
 
 @ApiTags('Submissions')
 @Controller('submissions')
@@ -45,6 +48,7 @@ export class SubmissionController {
     private readonly submissionRepo: PrismaSubmissionRepository,
     private readonly challengeRepo: PrismaChallengeRepository,
     private readonly observability: ObservabilityService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -321,8 +325,36 @@ export class SubmissionController {
       }
     }
   })
-  async listSubmissions(@Request() req: any): Promise<Submission[]> {
+  async listSubmissions(
+    @Request() req: any,
+    @Query('userId') filterUserId?: string,
+    @Query('challengeId') challengeId?: string,
+    @Query('status') status?: string,
+    @Query('language') language?: string,
+  ): Promise<Submission[]> {
     const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    // Si es admin/profesor y hay filtros, usar búsqueda global
+    if ((userRole === 'ADMIN' || userRole === 'PROFESSOR') && (filterUserId || challengeId || status || language)) {
+      const results = await this.prisma.submission.findMany({
+        where: {
+          userId: filterUserId || undefined,
+          challengeId: challengeId || undefined,
+          status: status as any || undefined,
+          language: language || undefined,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      return results.map(SubmissionMapper.toDomain);
+    }
+
+    // Si es admin/profesor sin filtros, retornar todas
+    if (userRole === 'ADMIN' || userRole === 'PROFESSOR') {
+      return this.submissionRepo.findAll();
+    }
+
+    // Estudiantes solo ven sus propios submissions
     return this.submissionRepo.findByUser(userId);
   }
 

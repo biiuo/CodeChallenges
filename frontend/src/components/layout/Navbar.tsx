@@ -20,6 +20,15 @@ export const Navbar: React.FC = () => {
             <>
               <Link to="/challenges" className="hover:text-gray-300">Challenges</Link>
               <Link to="/courses" className="hover:text-gray-300">Courses</Link>
+              {user.role === 'STUDENT' && (
+                <Link to="/courses/catalog" className="hover:text-gray-300">Catalog</Link>
+              )}
+              {user.role === 'ADMIN' && (
+                <>
+                  <Link to="/admin/users" className="hover:text-gray-300">Users</Link>
+                  <Link to="/admin/professors" className="hover:text-gray-300">Professors</Link>
+                </>
+              )}
               <Link to="/submissions" className="hover:text-gray-300">Submissions</Link>
               <span className="text-gray-400">|</span>
               <span className="font-semibold">{user.username}</span>

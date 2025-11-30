@@ -15,7 +15,6 @@ async function main() {
       email: 'test@test.com',
       password: hashedPassword,
       name: 'Test User',
-      code: 'TEST001',
       username: 'testuser',
       role: 'STUDENT',
     },

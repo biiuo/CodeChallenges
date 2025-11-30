@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-import type { AuthResponse } from '../../types';
+
 
 export const Signup: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -48,24 +48,6 @@ export const Signup: React.FC = () => {
             {...register('email', { required: true })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Code</label>
-          <input
-            {...register('code', { required: true })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Role</label>
-          <select
-            {...register('role', { required: true })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-          >
-            <option value="STUDENT">Student</option>
-            <option value="PROFESSOR">Professor</option>
-            <option value="ADMIN">Admin</option>
-          </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Password</label>

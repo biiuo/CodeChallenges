@@ -8,7 +8,6 @@ export class User {
   constructor (
     public id: string,
     public name: string,
-    public code: string,
     public username: string,
     public email: string,
     private _password: string,

@@ -22,7 +22,7 @@ export const Dashboard: React.FC = () => {
           <p><strong>Username:</strong> {user?.username}</p>
           <p><strong>Email:</strong> {user?.email}</p>
           <p><strong>Role:</strong> {user?.role}</p>
-          <p><strong>Code:</strong> {user?.code}</p>
+          
         </div>
       </div>
     </div>

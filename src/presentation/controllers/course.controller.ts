@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Put, Delete, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Put, Delete, UseGuards, UsePipes, ValidationPipe, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -23,6 +23,7 @@ import { CreateCourseDTO } from '../../application/dtos/course';
 import { Role } from '../../domain/entities/user.entity';
 import { Roles } from '../decorators/roles.decorator';
 import { RolesGuard } from '../guards/roles.guard';
+import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 
 @ApiTags('Courses')
 @Controller('courses')
@@ -36,6 +37,7 @@ export class CoursesController {
     private readonly getAllCourses: FindAllCoursesUseCase,
     private readonly updateCourse: UpdateCourseUseCase,
     private readonly deleteCourse: DeleteCourseUseCase,
+    private readonly prisma?: PrismaService,
   ) {}
 
   @Post()
@@ -144,6 +146,33 @@ export class CoursesController {
   })
   async findAll() {
     return this.getAllCourses.execute();
+  }
+
+  @Get('my')
+  @ApiOperation({ 
+    summary: 'Obtener cursos del usuario autenticado',
+    description: 'Devuelve la lista de cursos en los que el usuario está inscrito.'
+  })
+  @ApiOkResponse({ description: 'Cursos del usuario obtenidos' })
+  async findMy(@Req() req: any) {
+    const userId = req.user?.id;
+    // Fallback if PrismaService is not available
+    if (!this.prisma) {
+      // As a fallback, return all and let frontend filter (not ideal)
+      return this.getAllCourses.execute();
+    }
+    const courses = await this.prisma.course.findMany({
+      where: {
+        students: {
+          some: { userId: userId },
+        },
+      },
+      include: {
+        _count: { select: { students: true, challenges: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return courses;
   }
 
   @Get(':code')

@@ -18,6 +18,8 @@ import type { HasherRepository } from '../../domain/repositories/hasher.reposito
 import { SignupUseCase } from 'src/application/usesCases/user/signup.usecase';
 import { LoginUseCase } from 'src/application/usesCases/user/login.usecase';
 import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../decorators/roles.decorator';
+import { RolesGuard } from '../guards/roles.guard';
 
 // 👇 Swagger
 import {
@@ -104,7 +106,6 @@ export class AuthController {
           email: dto.email, 
           password: dto.password,
           name: dto.name,
-          code: dto.code,
           username: dto.username,
           role: dto.role
       });
@@ -157,7 +158,7 @@ export class AuthController {
     }
   }
 
-  @UseGuards(AuthGuard('jwt-refresh'))
+  @UseGuards(AuthGuard('jwt-refresh'), RolesGuard)
   @Post('refresh')
   @ApiOperation({
     summary: 'Refrescar tokens',
@@ -179,6 +180,7 @@ export class AuthController {
     }
   })
   @ApiUnauthorizedResponse({ description: 'Refresh token inválido o expirado' })
+  @Roles('ADMIN','PROFESSOR','STUDENT')
   async refresh(@Req() req: any) {
     return this.signTokens(req.user.userId, req.user.role);
   }

@@ -19,6 +19,9 @@ services:
       - JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production
       - JWT_EXPIRES_IN=15m
       - JWT_REFRESH_EXPIRES_IN=7d
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
     ports:
       - "3000:3000"
     depends_on:
@@ -46,6 +49,45 @@ services:
       - backend
       - redis
       - db
+      - runner-python
+      - runner-node
+      - runner-java
+      - runner-cpp
+
+  # Code execution runners (built once, images reused by worker via docker run)
+  runner-python:
+    image: runner-python:latest
+    build:
+      context: ./runners
+      dockerfile: runner-python/Dockerfile
+    command: ["tail", "-f", "/dev/null"]
+    restart: "no"
+
+  runner-node:
+    image: runner-node:latest
+    build:
+      context: ./runners
+      dockerfile: runner-node/Dockerfile
+    command: ["tail", "-f", "/dev/null"]
+    restart: "no"
+
+  runner-java:
+    image: runner-java:latest
+    build:
+      context: ./runners
+      dockerfile: runner-java/Dockerfile
+    command: ["tail", "-f", "/dev/null"]
+    restart: "no"
+
+  runner-cpp:
+    image: runner-cpp:latest
+    build:
+      context: ./runners
+      dockerfile: runner-cpp/Dockerfile
+    command: ["tail", "-f", "/dev/null"]
+    restart: "no"
+    # Code execution runners
+  
 
   db:
     container_name: db_proyecto_final

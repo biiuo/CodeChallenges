@@ -1,4 +1,4 @@
-import { IsAlphanumeric, IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SignupRequest {
@@ -15,17 +15,14 @@ export class SignupRequest {
   @IsString() 
   name!: string;
 
-  @ApiProperty({ example: 'EST2025001', description: 'Código institucional del usuario' })
-  @IsAlphanumeric() 
-  code!: string;
-
   @ApiProperty({ example: 'maria.garcia', description: 'Nombre de usuario único' })
   @IsString() 
   username!: string;
 
-  @ApiProperty({ example: 'STUDENT', description: 'Rol del usuario', enum: ['STUDENT', 'PROFESSOR', 'ADMIN'] })
-  @IsString() 
-  role!: string;
+  @ApiProperty({ example: 'STUDENT', description: 'Rol del usuario (default: STUDENT)', enum: ['STUDENT', 'PROFESSOR', 'ADMIN'], required: false })
+  @IsString()
+  @IsOptional()
+  role?: string;
 }
 
 export class LoginRequest {

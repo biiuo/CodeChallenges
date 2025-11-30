@@ -4,7 +4,6 @@ export interface User {
   name: string;
   username: string;
   role: 'STUDENT' | 'PROFESSOR' | 'ADMIN';
-  code: string;
 }
 
 export interface AuthResponse {
@@ -42,8 +41,14 @@ export interface Course {
   code: string;
   name: string;
   period: string;
-  createdAt: string;
-  updatedAt: string;
+  coverImage?: string;
+  description?: string;
+  category?: string;
+  level?: string;
+  group?: string;
+  isPublished?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateCourseDto {
@@ -99,4 +104,30 @@ export interface SubmissionResult {
   cases: TestCaseResult[];
 }
 
+export interface Evaluation {
+  id: number;
+  evaluationNumber: number;
+  name: string;
+  description: string;
+  date: string;
+  maxDuration: number;
+  courseId: string;
+  createdAt: string;
+}
 
+export interface CreateEvaluationDto {
+  name: string;
+  description: string;
+  date: string;
+  maxDuration: number;
+  courseId: string;
+}
+
+export interface Testcase {
+  challengeId: string;
+  caseNumber: number;
+  input: string;
+  output: string;
+  visible: boolean;
+  createdAt: string;
+}
