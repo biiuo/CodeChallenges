@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { uploadCoverImage } from '../../api/cloudinaryApi';
 import { useParams, Link } from 'react-router-dom';
 import { coursesApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';

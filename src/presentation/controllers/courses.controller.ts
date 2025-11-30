@@ -5,6 +5,7 @@ import { Roles } from '../decorators/roles.decorator';
 import { RolesGuard } from '../guards/roles.guard';
 import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import { IsProfessorOfCourseGuard } from '../guards/is-professor-of-course.guard';
+import { IsMemberOrProfessorOfCourseGuard } from '../guards/is-member-or-professor-of-course.guard';
 import { IsStudentOfCourseGuard } from '../guards/is-student-of-course.guard';
 
 class CreateCourseDto {
@@ -23,6 +24,17 @@ class UpdateCourseDto {
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('courses')
 export class CoursesController {
+    @Get('my')
+    @Roles('STUDENT')
+    @ApiOperation({ summary: 'Obtener mis cursos (solo estudiante)' })
+    async getMyCourses(@Req() req: any) {
+      const userId = req.user?.userId;
+      if (!userId) throw new Error('No userId');
+      return this.prisma.course.findMany({
+        where: { students: { some: { userId } } },
+        select: { id: true, code: true, name: true, period: true, description: true, isPublished: true }
+      });
+    }
   constructor(private readonly prisma: PrismaService) {}
 
   @Post()
@@ -56,20 +68,8 @@ export class CoursesController {
   async list(@Req() req: any) {
     const role = req.user?.role;
     const userId = req.user?.userId;
-      if (role === 'STUDENT' && userId) {
-        return this.prisma.course.findMany({
-          where: { students: { some: { userId } } },
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            period: true,
-            description: true,
-            isPublished: true,
-          }
-        });
-    }
     if (role === 'PROFESSOR' && userId) {
+      // Solo los cursos creados por el profesor
       return this.prisma.course.findMany({
         where: { professors: { some: { id: userId } } },
         select: {
@@ -77,26 +77,28 @@ export class CoursesController {
           code: true,
           name: true,
           period: true,
-            description: true,
-            isPublished: true,
+          description: true,
+          isPublished: true,
         }
       });
     }
+    // Para estudiantes y admin, mostrar todos los cursos publicados
     return this.prisma.course.findMany({
+      where: { isPublished: true },
       select: {
         id: true,
         code: true,
         name: true,
         period: true,
-          description: true,
-          isPublished: true,
+        description: true,
+        isPublished: true,
       }
     });
   }
 
   @Get(':id')
   @Roles('ADMIN','PROFESSOR','STUDENT')
-  @UseGuards(IsProfessorOfCourseGuard)
+  @UseGuards(IsMemberOrProfessorOfCourseGuard)
   @ApiOperation({ summary: 'Obtener curso por id (pertenencia requerida)' })
   async get(@Param('id') id: string) {
     return this.prisma.course.findUnique({
@@ -185,16 +187,16 @@ export class CoursesController {
 
   @Get(':id/students')
   @Roles('ADMIN','PROFESSOR','STUDENT')
-  @UseGuards(IsStudentOfCourseGuard)
-  @ApiOperation({ summary: 'Listar estudiantes del curso (miembros del curso)' })
+  @UseGuards(IsMemberOrProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Listar estudiantes del curso (miembros del curso o profesores)' })
   async listStudents(@Param('id') id: string) {
     return this.prisma.courseStudent.findMany({ where: { courseId: id }, include: { user: true } });
   }
 
   @Get(':id/challenges')
   @Roles('ADMIN','PROFESSOR','STUDENT')
-  @UseGuards(IsStudentOfCourseGuard)
-  @ApiOperation({ summary: 'Listar retos del curso (miembros del curso)' })
+  @UseGuards(IsMemberOrProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Listar retos del curso (miembros del curso o profesores)' })
   async listChallenges(@Param('id') id: string, @Req() req: any) {
     const role = req.user?.role;
     if (role === 'STUDENT') {
