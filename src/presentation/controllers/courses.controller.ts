@@ -214,10 +214,36 @@ export class CoursesController {
     return this.prisma.challenge.findMany({ where: { courses: { some: { id } }, status: 'PUBLISHED' } });
   }
 
+  @Post(':id/challenges')
+  @Roles('ADMIN','PROFESSOR')
+  @UseGuards(IsProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Asignar múltiples retos al curso (ADMIN/PROFESSOR del curso)' })
+  async assignMultipleChallenges(@Param('id') id: string, @Body() body: { challengeIds: string[] }) {
+    const { challengeIds } = body;
+    if (!Array.isArray(challengeIds) || challengeIds.length === 0) {
+      throw new Error('challengeIds must be a non-empty array');
+    }
+    
+    // Conectar múltiples challenges a la vez
+    await this.prisma.course.update({
+      where: { id },
+      data: {
+        challenges: {
+          connect: challengeIds.map(challengeId => ({ id: challengeId }))
+        }
+      }
+    });
+    
+    return {
+      message: `Successfully added ${challengeIds.length} challenge(s) to course`,
+      addedCount: challengeIds.length
+    };
+  }
+
   @Post(':id/challenges/:challengeId')
   @Roles('ADMIN','PROFESSOR')
   @UseGuards(IsProfessorOfCourseGuard)
-  @ApiOperation({ summary: 'Asignar reto al curso (ADMIN/PROFESSOR del curso)' })
+  @ApiOperation({ summary: 'Asignar un reto al curso (ADMIN/PROFESSOR del curso)' })
   async assignChallenge(@Param('id') id: string, @Param('challengeId') challengeId: string) {
     return this.prisma.challenge.update({ where: { id: challengeId }, data: { courses: { connect: { id } } } });
   }
@@ -354,6 +380,32 @@ export class CoursesController {
         }
       }
     });
+  }
+
+  @Delete(':id/challenges')
+  @Roles('ADMIN','PROFESSOR')
+  @UseGuards(IsProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Desasignar múltiples retos del curso (ADMIN/PROFESSOR del curso)' })
+  async unassignMultipleChallenges(@Param('id') id: string, @Body() body: { challengeIds: string[] }) {
+    const { challengeIds } = body;
+    if (!Array.isArray(challengeIds) || challengeIds.length === 0) {
+      throw new Error('challengeIds must be a non-empty array');
+    }
+    
+    // Desconectar múltiples challenges a la vez
+    await this.prisma.course.update({
+      where: { id },
+      data: {
+        challenges: {
+          disconnect: challengeIds.map(challengeId => ({ id: challengeId }))
+        }
+      }
+    });
+    
+    return {
+      message: `Successfully removed ${challengeIds.length} challenge(s) from course`,
+      removedCount: challengeIds.length
+    };
   }
 
   @Delete(':id/challenges/:challengeId')

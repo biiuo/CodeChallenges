@@ -5,8 +5,4 @@
 
 */
 -- AlterTable
-ALTER TABLE "Challenge" ADD COLUMN     "solutionCode" TEXT,
-ADD COLUMN     "solutionLanguage" TEXT;
-
-
-
+ALTER TABLE "Course" DROP COLUMN "nrc";

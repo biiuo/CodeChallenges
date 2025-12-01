@@ -125,6 +125,18 @@ export const coursesApi = {
   deleteLesson: (id: string, lessonId: string) => api.delete(`/courses/${id}/lessons/${lessonId}`),
   addResource: (id: string, lessonId: string, data: any) => api.post(`/courses/${id}/lessons/${lessonId}/resources`, data),
   deleteResource: (id: string, lessonId: string, resourceId: string) => api.delete(`/courses/${id}/lessons/${lessonId}/resources/${resourceId}`),
+  
+  // NEW: Challenge management in courses
+  addChallengesToCourse: (courseId: string, challengeIds: string[]) => 
+    api.post(`/courses/${courseId}/challenges`, { challengeIds }),
+  removeChallengesFromCourse: (courseId: string, challengeIds: string[]) => 
+    api.delete(`/courses/${courseId}/challenges`, { data: { challengeIds } }),
+  getStatistics: (courseId: string) => 
+    api.get(`/courses/${courseId}/statistics`),
+  cloneChallenges: (targetCourseId: string, sourceCourseId: string) => 
+    api.post(`/courses/${targetCourseId}/clone-from/${sourceCourseId}`),
+  publishCourse: (courseId: string, isPublished: boolean) => 
+    api.put(`/courses/${courseId}/publish`, { isPublished }),
 };
 
 export const evaluationsApi = {

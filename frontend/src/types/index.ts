@@ -43,20 +43,29 @@ export interface Course {
   code: string;
   name: string;
   period: string;
-  coverImage?: string;
   description?: string;
   category?: string;
   level?: string;
   group?: string;
+  coverImage?: string;
   isPublished?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  professors?: User[];
+  students?: any[];
+  challenges?: Challenge[];
 }
 
 export interface CreateCourseDto {
   code: string;
   name: string;
   period: string;
+  description?: string;
+  category?: string;
+  level?: string;
+  group?: string;
+  coverImage?: string;
+  isPublished?: boolean;
   professorCode?: string[];
 }
 

@@ -18,13 +18,29 @@ export class RolesGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
+    
+    // Debug logging
+    console.log('🔍 RolesGuard Debug:');
+    console.log('Required roles:', requiredRoles);
+    console.log('User object:', user);
+    console.log('User role:', user?.role);
+    console.log('User role type:', typeof user?.role);
+    
     if (!user || !user.role) {
       throw new ForbiddenException('Missing user role');
     }
 
-    const allowed = requiredRoles.includes(user.role);
+    // Compare roles as strings to handle both enum and string values
+    const userRole = String(user.role);
+    const requiredRolesStr = requiredRoles.map(r => String(r));
+    const allowed = requiredRolesStr.includes(userRole);
+    
+    console.log('User role (string):', userRole);
+    console.log('Required roles (strings):', requiredRolesStr);
+    console.log('Is allowed?:', allowed);
+    
     if (!allowed) {
-      throw new ForbiddenException('Insufficient role');
+      throw new ForbiddenException(`Insufficient role. Required: [${requiredRolesStr.join(', ')}], Got: ${userRole}`);
     }
     return true;
   }

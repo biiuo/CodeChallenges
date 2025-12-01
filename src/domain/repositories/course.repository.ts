@@ -1,5 +1,6 @@
 // src/domain/repositories/course.repository.ts
 import { Course } from '../entities/course.entity';
+import { Challenge } from '../entities/challenge.entity';
 
 export interface CourseRepository {
   create(course: Partial<Course>): Promise<Course>;
@@ -9,4 +10,10 @@ export interface CourseRepository {
   findAll(): Promise<Course[]>;
   update(code: string, data: Partial<Course>): Promise<Course>;
   delete(code: string): Promise<void>;
+  
+  // Métodos para gestionar challenges en cursos
+  addChallengesToCourse(courseId: string, challengeIds: string[]): Promise<void>;
+  removeChallengesFromCourse(courseId: string, challengeIds: string[]): Promise<void>;
+  findChallengesByCourseId(courseId: string): Promise<Challenge[]>;
+  isChallengeInCourse(courseId: string, challengeId: string): Promise<boolean>;
 }

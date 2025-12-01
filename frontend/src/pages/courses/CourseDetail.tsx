@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { uploadCoverImage } from '../../api/cloudinaryApi';
 import { useParams, Link } from 'react-router-dom';
 import { coursesApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import CourseLessonsManager from './CourseLessonsManager';
 import CourseLearningPlatform from './CourseLearningPlatform';
+import CourseChallengesManager from './CourseChallengesManager';
+import CourseStatistics from './CourseStatistics';
+import CloneChallengesModal from './CloneChallengesModal';
 
-type TabType = 'overview' | 'lessons' | 'students' | 'evaluations' | 'submissions' | 'settings';
+type TabType = 'overview' | 'lessons' | 'challenges' | 'students' | 'evaluations' | 'submissions' | 'statistics' | 'settings';
 
 export const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -87,6 +89,9 @@ export const CourseDetail: React.FC = () => {
           <button onClick={() => setActiveTab('lessons')} className={`w-full text-left px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'lessons' ? 'bg-indigo-50 text-indigo-700 border-r-4 border-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}>
             📚 Lessons
           </button>
+          <button onClick={() => setActiveTab('challenges')} className={`w-full text-left px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'challenges' ? 'bg-indigo-50 text-indigo-700 border-r-4 border-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}>
+            🎯 Challenges ({challenges.length})
+          </button>
           <button onClick={() => setActiveTab('students')} className={`w-full text-left px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'students' ? 'bg-indigo-50 text-indigo-700 border-r-4 border-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}>
             👥 Students ({students.length})
           </button>
@@ -97,9 +102,14 @@ export const CourseDetail: React.FC = () => {
             📤 Submissions
           </button>
           {isAdmin && (
-            <button onClick={() => setActiveTab('settings')} className={`w-full text-left px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'settings' ? 'bg-indigo-50 text-indigo-700 border-r-4 border-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}>
-              ⚙️ Settings
-            </button>
+            <>
+              <button onClick={() => setActiveTab('statistics')} className={`w-full text-left px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'statistics' ? 'bg-indigo-50 text-indigo-700 border-r-4 border-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}>
+                📊 Statistics
+              </button>
+              <button onClick={() => setActiveTab('settings')} className={`w-full text-left px-6 py-3 text-sm font-medium transition-colors ${activeTab === 'settings' ? 'bg-indigo-50 text-indigo-700 border-r-4 border-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}>
+                ⚙️ Settings
+              </button>
+            </>
           )}
         </div>
         <div className="p-4 border-t">
@@ -168,6 +178,45 @@ export const CourseDetail: React.FC = () => {
             </div>
           )}
 
+          {activeTab === 'challenges' && (
+            <div className="p-6">
+              {isAdmin ? (
+                <CourseChallengesManager courseId={id!} />
+              ) : (
+                <div className="space-y-6">
+                  <h2 className="text-2xl font-semibold">Course Challenges</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {challenges.map((challenge: any) => (
+                      <Link
+                        key={challenge.id}
+                        to={`/challenges/${challenge.id}`}
+                        className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border border-gray-200"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{challenge.title}</h3>
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{challenge.description}</p>
+                        <div className="flex items-center justify-between">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            challenge.difficulty === 'EASY' ? 'bg-green-100 text-green-800' :
+                            challenge.difficulty === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {challenge.difficulty}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  {challenges.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <div className="text-4xl mb-4">📝</div>
+                      <p>No challenges assigned yet</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'students' && (
             <div className="bg-white p-6 rounded-lg shadow">
               <h2 className="text-2xl font-semibold mb-4">Students ({students.length})</h2>
@@ -228,8 +277,49 @@ export const CourseDetail: React.FC = () => {
             </div>
           )}
 
+          {activeTab === 'statistics' && isAdmin && (
+            <div className="p-6">
+              <CourseStatistics courseId={id!} />
+            </div>
+          )}
+
           {activeTab === 'settings' && isAdmin && (
             <div className="space-y-6">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-2xl font-semibold mb-4">Publish Status</h2>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900">Course is {course.isPublished ? 'Published' : 'Unpublished'}</div>
+                    <div className="text-sm text-gray-600">
+                      {course.isPublished ? 'Students can enroll in this course' : 'Course is hidden from students'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await coursesApi.publishCourse(id!, !course.isPublished);
+                        alert(`Course ${!course.isPublished ? 'published' : 'unpublished'} successfully!`);
+                        fetchCourse();
+                      } catch (err: any) {
+                        alert(err.response?.data?.message || 'Failed to update publish status');
+                      }
+                    }}
+                    className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                      course.isPublished
+                        ? 'bg-gray-500 text-white hover:bg-gray-600'
+                        : 'bg-green-500 text-white hover:bg-green-600'
+                    }`}
+                  >
+                    {course.isPublished ? 'Unpublish' : 'Publish'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-2xl font-semibold mb-4">Clone Challenges</h2>
+                <CloneChallengesModal courseId={id!} onSuccess={fetchCourse} />
+              </div>
+
               <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="text-2xl font-semibold mb-4">Course Information</h2>
                 <div className="space-y-4">
