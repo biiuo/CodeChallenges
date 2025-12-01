@@ -143,13 +143,18 @@ export const coursesApi = {
 
 export const evaluationsApi = {
   getAll: () => api.get<Evaluation[]>('/evaluations'),
+  listByCourse: (courseId: string) => api.get<Evaluation[]>(`/courses/${courseId}/evaluations`),
   getById: (id: number) => api.get<Evaluation>(`/evaluations/${id}`),
   create: (data: CreateEvaluationDto) => api.post<Evaluation>('/evaluations', data),
+  createInCourse: (courseId: string, data: any) => api.post(`/courses/${courseId}/evaluations`, data),
   update: (id: number, data: Partial<CreateEvaluationDto>) => api.put<Evaluation>(`/evaluations/${id}`, data),
   delete: (id: number) => api.delete(`/evaluations/${id}`),
   addChallenge: (id: number, challengeId: string) => api.post(`/evaluations/${id}/challenges/${challengeId}`),
   removeChallenge: (id: number, challengeId: string) => api.delete(`/evaluations/${id}/challenges/${challengeId}`),
   getSubmissions: (id: number) => api.get<Submission[]>(`/evaluations/${id}/submissions`),
+  getResults: (id: number) => api.get(`/evaluations/${id}/results`),
+  getMyResults: (id: number) => api.get(`/evaluations/${id}/my-results`),
+  getStatistics: (id: number) => api.get(`/evaluations/${id}/statistics`),
 };
 
 export const testcasesApi = {

@@ -19,27 +19,68 @@ const swagger_1 = require("@nestjs/swagger");
 const roles_decorator_1 = require("../decorators/roles.decorator");
 const roles_guard_1 = require("../guards/roles.guard");
 const prisma_service_1 = require("../../infrastructure/persistence/prisma.service");
-class CreateEvaluationDto {
-    name;
-    description;
-    date;
-    maxDuration;
-    courseId;
-}
-class UpdateEvaluationDto {
-    name;
-    description;
-    date;
-    maxDuration;
-}
+const evaluation_dto_1 = require("../../application/dtos/evaluation.dto");
 let EvaluationsController = class EvaluationsController {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
+    async createWithChallenges(courseId, dto, req) {
+        const role = req.user?.role;
+        const userId = req.user?.userId;
+        if (role === 'PROFESSOR' && userId) {
+            const course = await this.prisma.course.findFirst({
+                where: {
+                    id: courseId,
+                    professors: { some: { id: userId } }
+                }
+            });
+            if (!course) {
+                throw new Error('You are not a professor of this course');
+            }
+        }
+        const lastEval = await this.prisma.evaluation.findFirst({
+            where: { courseId },
+            orderBy: { evaluationNumber: 'desc' },
+        });
+        const evaluationNumber = (lastEval?.evaluationNumber || 0) + 1;
+        const evaluation = await this.prisma.evaluation.create({
+            data: {
+                name: dto.name,
+                description: dto.description,
+                date: new Date(dto.date),
+                maxDuration: dto.maxDuration,
+                courseId,
+                evaluationNumber,
+                ...(dto.challengeIds && dto.challengeIds.length > 0 && {
+                    challenges: {
+                        create: dto.challengeIds.map((challengeId) => ({
+                            challengeId,
+                        })),
+                    },
+                }),
+            },
+            include: {
+                course: {
+                    select: { id: true, name: true, code: true }
+                },
+                challenges: {
+                    include: {
+                        challenge: {
+                            select: { id: true, title: true, difficulty: true }
+                        }
+                    }
+                }
+            }
+        });
+        return evaluation;
+    }
     async create(dto, req) {
         const role = req.user?.role;
         const userId = req.user?.userId;
+        if (!dto.courseId) {
+            throw new Error('courseId is required');
+        }
         if (role === 'PROFESSOR' && userId) {
             const course = await this.prisma.course.findFirst({
                 where: {
@@ -174,7 +215,11 @@ let EvaluationsController = class EvaluationsController {
                 throw new Error('You are not a professor of this course');
             }
         }
-        return evaluation;
+        const transformedEvaluation = {
+            ...evaluation,
+            challenges: evaluation.challenges.map(ec => ec.challenge)
+        };
+        return transformedEvaluation;
     }
     async update(id, dto, req) {
         const role = req.user?.role;
@@ -197,6 +242,17 @@ let EvaluationsController = class EvaluationsController {
                 throw new Error('You are not a professor of this course');
             }
         }
+        if (dto.challengeIds && dto.challengeIds.length > 0) {
+            await this.prisma.evaluationChallenge.deleteMany({
+                where: { evaluationId: Number(id) }
+            });
+            await this.prisma.evaluationChallenge.createMany({
+                data: dto.challengeIds.map(challengeId => ({
+                    evaluationId: Number(id),
+                    challengeId: challengeId
+                }))
+            });
+        }
         return this.prisma.evaluation.update({
             where: { id: Number(id) },
             data: {
@@ -208,6 +264,13 @@ let EvaluationsController = class EvaluationsController {
             include: {
                 course: {
                     select: { id: true, name: true, code: true }
+                },
+                challenges: {
+                    include: {
+                        challenge: {
+                            select: { id: true, title: true, description: true, difficulty: true }
+                        }
+                    }
                 }
             }
         });
@@ -233,6 +296,9 @@ let EvaluationsController = class EvaluationsController {
                 throw new Error('You are not a professor of this course');
             }
         }
+        await this.prisma.evaluationChallenge.deleteMany({
+            where: { evaluationId: Number(id) }
+        });
         return this.prisma.evaluation.delete({
             where: { id: Number(id) },
             include: {
@@ -399,8 +465,89 @@ let EvaluationsController = class EvaluationsController {
             topStudents: topStudentsWithNames
         };
     }
+    async getMyResults(id, req) {
+        const userId = req.user?.userId;
+        if (!userId) {
+            throw new Error('User not authenticated');
+        }
+        const evaluation = await this.prisma.evaluation.findUnique({
+            where: { id: Number(id) },
+            include: {
+                challenges: {
+                    include: {
+                        challenge: {
+                            select: { id: true, title: true, difficulty: true }
+                        }
+                    }
+                }
+            }
+        });
+        if (!evaluation) {
+            throw new Error('Evaluation not found');
+        }
+        const enrollment = await this.prisma.courseStudent.findUnique({
+            where: { userId_courseId: { userId, courseId: evaluation.courseId } }
+        });
+        if (!enrollment) {
+            throw new Error('You are not enrolled in this course');
+        }
+        const submissions = await this.prisma.submission.findMany({
+            where: {
+                userId,
+                evaluationId: Number(id)
+            },
+            include: {
+                challenge: {
+                    select: { id: true, title: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        const challengeScores = {};
+        evaluation.challenges.forEach(ec => {
+            const challengeSubs = submissions.filter(s => s.challengeId === ec.challengeId);
+            if (challengeSubs.length > 0) {
+                const bestScore = Math.max(...challengeSubs.map(s => s.score || 0));
+                challengeScores[ec.challengeId] = bestScore;
+            }
+            else {
+                challengeScores[ec.challengeId] = 0;
+            }
+        });
+        const totalChallenges = evaluation.challenges.length;
+        const totalScore = Object.values(challengeScores).reduce((sum, score) => sum + score, 0);
+        const finalScore = totalChallenges > 0 ? Math.round(totalScore / totalChallenges) : 0;
+        return {
+            evaluation: {
+                ...evaluation,
+                challenges: evaluation.challenges.map(ec => ec.challenge)
+            },
+            score: finalScore,
+            challengeScores,
+            submissions: submissions.map(s => ({
+                id: s.id,
+                challengeId: s.challengeId,
+                challengeTitle: s.challenge.title,
+                status: s.status,
+                score: s.score,
+                timeMsTotal: s.timeMsTotal,
+                createdAt: s.createdAt
+            }))
+        };
+    }
 };
 exports.EvaluationsController = EvaluationsController;
+__decorate([
+    (0, common_1.Post)('courses/:courseId/evaluations'),
+    (0, roles_decorator_1.Roles)('ADMIN', 'PROFESSOR'),
+    (0, swagger_1.ApiOperation)({ summary: 'Crear evaluación con challenges (ADMIN/PROFESSOR)' }),
+    __param(0, (0, common_1.Param)('courseId')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], EvaluationsController.prototype, "createWithChallenges", null);
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('ADMIN', 'PROFESSOR'),
@@ -408,7 +555,7 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [CreateEvaluationDto, Object]),
+    __metadata("design:paramtypes", [evaluation_dto_1.CreateEvaluationDto, Object]),
     __metadata("design:returntype", Promise)
 ], EvaluationsController.prototype, "create", null);
 __decorate([
@@ -438,7 +585,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, UpdateEvaluationDto, Object]),
+    __metadata("design:paramtypes", [String, evaluation_dto_1.UpdateEvaluationDto, Object]),
     __metadata("design:returntype", Promise)
 ], EvaluationsController.prototype, "update", null);
 __decorate([
@@ -494,6 +641,16 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], EvaluationsController.prototype, "getEvaluationStatistics", null);
+__decorate([
+    (0, common_1.Get)(':id/my-results'),
+    (0, roles_decorator_1.Roles)('STUDENT'),
+    (0, swagger_1.ApiOperation)({ summary: 'Obtener mis resultados en la evaluación (STUDENT)' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], EvaluationsController.prototype, "getMyResults", null);
 exports.EvaluationsController = EvaluationsController = __decorate([
     (0, swagger_1.ApiTags)('Evaluations'),
     (0, swagger_1.ApiBearerAuth)('access'),

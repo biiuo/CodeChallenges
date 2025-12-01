@@ -7,19 +7,22 @@ import CourseLearningPlatform from './CourseLearningPlatform';
 import CourseChallengesManager from './CourseChallengesManager';
 import CourseStatistics from './CourseStatistics';
 import CloneChallengesModal from './CloneChallengesModal';
+import { EvaluationManager } from './EvaluationManager';
 
 type TabType = 'overview' | 'lessons' | 'challenges' | 'students' | 'evaluations' | 'submissions' | 'statistics' | 'settings';
 
 export const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user, token } = useAuth();
+  const [searchParams] = React.useState(() => new URLSearchParams(window.location.search));
+  const initialTab = (searchParams.get('tab') as TabType) || 'overview';
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'PROFESSOR';
   const [course, setCourse] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [coverImage, setCoverImage] = useState<string>('https://images.unsplash.com/photo-1509062522246-3755977927d7?w=1200&h=300&fit=crop');
   const [editingCover, setEditingCover] = useState(false);
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
@@ -237,15 +240,30 @@ export const CourseDetail: React.FC = () => {
           )}
 
           {activeTab === 'evaluations' && (
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-2xl font-semibold mb-4">Evaluations</h2>
-              <p className="text-gray-500">Evaluation management coming soon.</p>
+            <div className="p-6">
+              <EvaluationManager courseId={id!} />
             </div>
           )}
 
           {activeTab === 'submissions' && (
             <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-2xl font-semibold mb-4">Submissions</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-semibold">Submissions</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setActiveTab('challenges')}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    ← Back to Challenges
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    ← Back to Course
+                  </button>
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
@@ -259,7 +277,11 @@ export const CourseDetail: React.FC = () => {
                   </thead>
                   <tbody>
                     {submissions.map((sub: any) => (
-                      <tr key={sub.id} className="border-b hover:bg-gray-50">
+                      <tr 
+                        key={sub.id} 
+                        className="border-b hover:bg-gray-50 cursor-pointer"
+                        onClick={() => window.location.href = `/submissions/${sub.id}?courseId=${id}`}
+                      >
                         <td className="p-3">{sub.id}</td>
                         <td className="p-3">{sub.challengeId}</td>
                         <td className="p-3">

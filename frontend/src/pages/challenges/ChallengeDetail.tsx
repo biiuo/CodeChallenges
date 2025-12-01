@@ -10,6 +10,7 @@ export const ChallengeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const courseId = searchParams.get('courseId');
+  const evaluationId = searchParams.get('evaluationId');
   const { user } = useAuth();
   const { register, handleSubmit, reset } = useForm();
   const [submissionResult, setSubmissionResult] = React.useState<Submission | null>(null);
@@ -36,6 +37,11 @@ export const ChallengeDetail: React.FC = () => {
       // Si viene de un curso, incluir el courseId
       if (courseId) {
         payload.courseId = courseId;
+      }
+      
+      // Si viene de una evaluación, incluir el evaluationId
+      if (evaluationId) {
+        payload.evaluationId = evaluationId;
       }
       
       const response = await submissionsApi.create(payload);

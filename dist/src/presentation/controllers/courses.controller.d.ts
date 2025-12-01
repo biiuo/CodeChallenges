@@ -8,114 +8,114 @@ export declare class CoursesController {
     constructor(prisma: PrismaService);
     getMyCourses(req: any): Promise<{
         id: string;
-        code: string;
         name: string;
-        period: string;
         description: string | null;
+        code: string;
+        period: string;
         isPublished: boolean;
     }[]>;
     create(body: any, req: any): Promise<{
         id: string;
-        code: string;
         name: string;
-        period: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
+        code: string;
+        period: string;
         category: string | null;
         level: string | null;
         group: string | null;
         coverImage: string | null;
         isPublished: boolean;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     list(req: any): Promise<{
         id: string;
-        code: string;
         name: string;
-        period: string;
         description: string | null;
+        code: string;
+        period: string;
         isPublished: boolean;
     }[]>;
     get(id: string): Promise<{
         id: string;
-        code: string;
         name: string;
-        period: string;
         description: string | null;
+        code: string;
+        period: string;
         isPublished: boolean;
         professors: {
             id: string;
-            name: string;
             username: string;
             email: string;
+            name: string;
         }[];
     } | null>;
     getMy(id: string): Promise<{
         id: string;
-        code: string;
         name: string;
-        period: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
+        code: string;
+        period: string;
         category: string | null;
         level: string | null;
         group: string | null;
         coverImage: string | null;
         isPublished: boolean;
-        createdAt: Date;
-        updatedAt: Date;
     } | null>;
     update(id: string, dto: UpdateCourseDto): Promise<{
         id: string;
-        code: string;
         name: string;
-        period: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
+        code: string;
+        period: string;
         category: string | null;
         level: string | null;
         group: string | null;
         coverImage: string | null;
         isPublished: boolean;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         id: string;
-        code: string;
         name: string;
-        period: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
+        code: string;
+        period: string;
         category: string | null;
         level: string | null;
         group: string | null;
         coverImage: string | null;
         isPublished: boolean;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     assignProfessor(id: string, userId: string, req: any): Promise<{
         professors: {
             id: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
             username: string;
             email: string;
             password: string;
+            name: string;
             role: import("@prisma/client").$Enums.Role;
+            createdAt: Date;
+            updatedAt: Date;
         }[];
     } & {
         id: string;
-        code: string;
         name: string;
-        period: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
+        code: string;
+        period: string;
         category: string | null;
         level: string | null;
         group: string | null;
         coverImage: string | null;
         isPublished: boolean;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     enrollStudent(id: string, userId: string): Promise<{
         ok: boolean;
@@ -131,13 +131,13 @@ export declare class CoursesController {
     listStudents(id: string): Promise<({
         user: {
             id: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
             username: string;
             email: string;
             password: string;
+            name: string;
             role: import("@prisma/client").$Enums.Role;
+            createdAt: Date;
+            updatedAt: Date;
         };
     } & {
         userId: string;
@@ -147,8 +147,8 @@ export declare class CoursesController {
     listChallenges(id: string, req: any): Promise<({
         author: {
             id: string;
-            name: string;
             username: string;
+            name: string;
         };
         testcases: {
             createdAt: Date;
@@ -160,10 +160,10 @@ export declare class CoursesController {
         }[];
     } & {
         id: string;
-        description: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        description: string;
         difficulty: import("@prisma/client").$Enums.Difficulty;
         tags: string[];
         timeLimit: number;
@@ -177,8 +177,8 @@ export declare class CoursesController {
     listMyChallenges(id: string): Promise<({
         author: {
             id: string;
-            name: string;
             username: string;
+            name: string;
         };
         testcases: {
             createdAt: Date;
@@ -190,10 +190,10 @@ export declare class CoursesController {
         }[];
     } & {
         id: string;
-        description: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        description: string;
         difficulty: import("@prisma/client").$Enums.Difficulty;
         tags: string[];
         timeLimit: number;
@@ -216,10 +216,10 @@ export declare class CoursesController {
         message: string;
         challenge: {
             id: string;
-            description: string;
             createdAt: Date;
             updatedAt: Date;
             title: string;
+            description: string;
             difficulty: import("@prisma/client").$Enums.Difficulty;
             tags: string[];
             timeLimit: number;
@@ -233,10 +233,10 @@ export declare class CoursesController {
     }>;
     assignChallenge(id: string, challengeId: string): Promise<{
         id: string;
-        description: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        description: string;
         difficulty: import("@prisma/client").$Enums.Difficulty;
         tags: string[];
         timeLimit: number;
@@ -250,9 +250,9 @@ export declare class CoursesController {
     listSubmissions(id: string, studentId?: string, challengeId?: string, status?: string, evaluationId?: string): Promise<({
         user: {
             id: string;
-            name: string;
             username: string;
             email: string;
+            name: string;
         };
         challenge: {
             id: string;
@@ -266,31 +266,31 @@ export declare class CoursesController {
         } | null;
     } & {
         id: number;
-        code: string;
         createdAt: Date;
-        userId: string;
-        courseId: string | null;
         status: import("@prisma/client").$Enums.SubmissionStatus;
         challengeId: string;
-        submissionNumber: number;
         language: string;
+        code: string;
         score: number | null;
         timeMsTotal: number | null;
+        userId: string;
+        courseId: string | null;
         evaluationId: number | null;
+        submissionNumber: number;
     })[]>;
     listSubmissionsByChallenge(id: string, challengeId: string): Promise<{
         id: number;
-        code: string;
         createdAt: Date;
-        userId: string;
-        courseId: string | null;
         status: import("@prisma/client").$Enums.SubmissionStatus;
         challengeId: string;
-        submissionNumber: number;
         language: string;
+        code: string;
         score: number | null;
         timeMsTotal: number | null;
+        userId: string;
+        courseId: string | null;
         evaluationId: number | null;
+        submissionNumber: number;
     }[]>;
     listMySubmissions(id: string, req: any, evaluationId?: string, challengeId?: string, status?: string): Promise<({
         challenge: {
@@ -305,17 +305,17 @@ export declare class CoursesController {
         } | null;
     } & {
         id: number;
-        code: string;
         createdAt: Date;
-        userId: string;
-        courseId: string | null;
         status: import("@prisma/client").$Enums.SubmissionStatus;
         challengeId: string;
-        submissionNumber: number;
         language: string;
+        code: string;
         score: number | null;
         timeMsTotal: number | null;
+        userId: string;
+        courseId: string | null;
         evaluationId: number | null;
+        submissionNumber: number;
     })[]>;
     listMySubmissionsByEvaluation(courseId: string, evaluationId: string, req: any): Promise<({
         challenge: {
@@ -330,17 +330,17 @@ export declare class CoursesController {
         }[];
     } & {
         id: number;
-        code: string;
         createdAt: Date;
-        userId: string;
-        courseId: string | null;
         status: import("@prisma/client").$Enums.SubmissionStatus;
         challengeId: string;
-        submissionNumber: number;
         language: string;
+        code: string;
         score: number | null;
         timeMsTotal: number | null;
+        userId: string;
+        courseId: string | null;
         evaluationId: number | null;
+        submissionNumber: number;
     })[]>;
     unassignMultipleChallenges(id: string, body: {
         challengeIds: string[];
@@ -350,10 +350,10 @@ export declare class CoursesController {
     }>;
     unassignChallenge(id: string, challengeId: string): Promise<{
         id: string;
-        description: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        description: string;
         difficulty: import("@prisma/client").$Enums.Difficulty;
         tags: string[];
         timeLimit: number;
@@ -369,69 +369,69 @@ export declare class CoursesController {
     }>;
     removeProfessor(id: string, userId: string): Promise<{
         id: string;
-        code: string;
         name: string;
-        period: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
+        code: string;
+        period: string;
         category: string | null;
         level: string | null;
         group: string | null;
         coverImage: string | null;
         isPublished: boolean;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     updateMetadata(id: string, body: any): Promise<{
         id: string;
-        code: string;
         name: string;
-        period: string;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
+        code: string;
+        period: string;
         category: string | null;
         level: string | null;
         group: string | null;
         coverImage: string | null;
         isPublished: boolean;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     listLessons(id: string): Promise<({
         resources: {
             id: string;
             title: string;
+            type: string;
             lessonId: string;
             url: string;
-            type: string;
         }[];
     } & {
         id: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        courseId: string;
         title: string;
+        description: string | null;
+        courseId: string;
         videoUrl: string | null;
         duration: string | null;
         order: number;
     })[]>;
     createLesson(id: string, body: any): Promise<{
         id: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        courseId: string;
         title: string;
+        description: string | null;
+        courseId: string;
         videoUrl: string | null;
         duration: string | null;
         order: number;
     }>;
     updateLesson(courseId: string, lessonId: string, body: any): Promise<{
         id: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
-        courseId: string;
         title: string;
+        description: string | null;
+        courseId: string;
         videoUrl: string | null;
         duration: string | null;
         order: number;
@@ -442,12 +442,54 @@ export declare class CoursesController {
     addResource(courseId: string, lessonId: string, body: any): Promise<{
         id: string;
         title: string;
+        type: string;
         lessonId: string;
         url: string;
-        type: string;
     }>;
     deleteResource(courseId: string, lessonId: string, resourceId: string): Promise<{
         ok: boolean;
+    }>;
+    listEvaluations(courseId: string, req: any): Promise<({
+        challenges: ({
+            challenge: {
+                id: string;
+                title: string;
+                difficulty: import("@prisma/client").$Enums.Difficulty;
+            };
+        } & {
+            challengeId: string;
+            evaluationId: number;
+        })[];
+    } & {
+        id: number;
+        name: string;
+        createdAt: Date;
+        description: string;
+        courseId: string;
+        evaluationNumber: number;
+        date: Date;
+        maxDuration: number;
+    })[]>;
+    createEvaluation(courseId: string, dto: any): Promise<{
+        challenges: ({
+            challenge: {
+                id: string;
+                title: string;
+                difficulty: import("@prisma/client").$Enums.Difficulty;
+            };
+        } & {
+            challengeId: string;
+            evaluationId: number;
+        })[];
+    } & {
+        id: number;
+        name: string;
+        createdAt: Date;
+        description: string;
+        courseId: string;
+        evaluationNumber: number;
+        date: Date;
+        maxDuration: number;
     }>;
     getCourseStatistics(courseId: string): Promise<{
         totalStudents: number;
@@ -488,29 +530,5 @@ export declare class CoursesController {
             createdAt: Date;
         }[];
     }>;
-    listEvaluations(courseId: string, req: any): Promise<({
-        challenges: ({
-            challenge: {
-                id: string;
-                title: string;
-                difficulty: import("@prisma/client").$Enums.Difficulty;
-            };
-        } & {
-            challengeId: string;
-            evaluationId: number;
-        })[];
-        _count: {
-            submissions: number;
-        };
-    } & {
-        id: number;
-        name: string;
-        description: string;
-        createdAt: Date;
-        courseId: string;
-        evaluationNumber: number;
-        date: Date;
-        maxDuration: number;
-    })[]>;
 }
 export {};

@@ -4,10 +4,7 @@ RUN apk add --no-cache docker-cli
 COPY package*.json ./
 COPY prisma ./prisma
 RUN npm install
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 COPY . .
 RUN npm install -g nodemon ts-node typescript
 EXPOSE 3000
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["npm","run","start:dev"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && npm run start:dev"]

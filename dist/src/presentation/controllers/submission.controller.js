@@ -49,19 +49,19 @@ let SubmissionController = SubmissionController_1 = class SubmissionController {
         if (!submissionData) {
             throw new Error(`No submission data received. DTO: ${JSON.stringify(dto)}, Body: ${JSON.stringify(req.body)}`);
         }
-        const { challengeId, code, language } = submissionData;
+        const { challengeId, code, language, courseId, evaluationId } = submissionData;
         if (!challengeId || !code || !language) {
             throw new Error(`Missing required fields. Received: ${JSON.stringify(submissionData)}`);
         }
         const userId = req.user.userId;
-        console.log(`🔍 [Controller] About to call CreateSubmissionUseCase for user ${userId}`);
+        console.log(`🔍 [Controller] About to call CreateSubmissionUseCase for user ${userId}, courseId: ${courseId}`);
         const submission = await this.createSubmissionUseCase.execute({
             userId,
             challengeId,
             code,
             language,
-            courseId: undefined,
-            evaluationId: undefined,
+            courseId: courseId || undefined,
+            evaluationId: evaluationId ? parseInt(evaluationId, 10) : undefined,
         });
         console.log(`🔍 [Controller] UseCase returned submission ${submission.id}`);
         this.logger.log(`✅ Submission ${submission.id} created and queued`);

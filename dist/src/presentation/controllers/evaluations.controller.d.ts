@@ -1,20 +1,34 @@
 import { PrismaService } from '../../infrastructure/persistence/prisma.service';
-declare class CreateEvaluationDto {
-    name: string;
-    description: string;
-    date: string;
-    maxDuration: number;
-    courseId: string;
-}
-declare class UpdateEvaluationDto {
-    name?: string;
-    description?: string;
-    date?: string;
-    maxDuration?: number;
-}
+import { CreateEvaluationDto, UpdateEvaluationDto } from '../../application/dtos/evaluation.dto';
 export declare class EvaluationsController {
     private readonly prisma;
     constructor(prisma: PrismaService);
+    createWithChallenges(courseId: string, dto: any, req: any): Promise<{
+        course: {
+            id: string;
+            name: string;
+            code: string;
+        };
+        challenges: ({
+            challenge: {
+                id: string;
+                title: string;
+                difficulty: import("@prisma/client").$Enums.Difficulty;
+            };
+        } & {
+            challengeId: string;
+            evaluationId: number;
+        })[];
+    } & {
+        id: number;
+        name: string;
+        createdAt: Date;
+        description: string;
+        courseId: string;
+        evaluationNumber: number;
+        date: Date;
+        maxDuration: number;
+    }>;
     create(dto: CreateEvaluationDto, req: any): Promise<{
         course: {
             id: string;
@@ -58,24 +72,18 @@ export declare class EvaluationsController {
         maxDuration: number;
     })[]>;
     get(id: string, req: any): Promise<{
+        challenges: {
+            id: string;
+            title: string;
+            description: string;
+            difficulty: import("@prisma/client").$Enums.Difficulty;
+            tags: string[];
+        }[];
         course: {
             id: string;
             name: string;
             code: string;
         };
-        challenges: ({
-            challenge: {
-                id: string;
-                title: string;
-                description: string;
-                difficulty: import("@prisma/client").$Enums.Difficulty;
-                tags: string[];
-            };
-        } & {
-            challengeId: string;
-            evaluationId: number;
-        })[];
-    } & {
         id: number;
         name: string;
         createdAt: Date;
@@ -91,6 +99,17 @@ export declare class EvaluationsController {
             name: string;
             code: string;
         };
+        challenges: ({
+            challenge: {
+                id: string;
+                title: string;
+                description: string;
+                difficulty: import("@prisma/client").$Enums.Difficulty;
+            };
+        } & {
+            challengeId: string;
+            evaluationId: number;
+        })[];
     } & {
         id: number;
         name: string;
@@ -167,5 +186,34 @@ export declare class EvaluationsController {
             totalSubmissions: number;
         }[];
     }>;
+    getMyResults(id: string, req: any): Promise<{
+        evaluation: {
+            challenges: {
+                id: string;
+                title: string;
+                difficulty: import("@prisma/client").$Enums.Difficulty;
+            }[];
+            id: number;
+            name: string;
+            createdAt: Date;
+            description: string;
+            courseId: string;
+            evaluationNumber: number;
+            date: Date;
+            maxDuration: number;
+        };
+        score: number;
+        challengeScores: {
+            [key: number]: number;
+        };
+        submissions: {
+            id: number;
+            challengeId: string;
+            challengeTitle: string;
+            status: import("@prisma/client").$Enums.SubmissionStatus;
+            score: number | null;
+            timeMsTotal: number | null;
+            createdAt: Date;
+        }[];
+    }>;
 }
-export {};
