@@ -172,8 +172,29 @@ export class EnhancedRunnerService {
 
     } finally {
       await this.observability.decrementActiveRunners();
+      
+      // Limpieza agresiva: forzar eliminación de contenedores huérfanos relacionados a este submission
+      await this.forceCleanupContainers(submissionId);
+      
       // Limpieza: eliminar directorio temporal
       await this.cleanupWorkDirectory(workDir);
+    }
+  }
+
+  /**
+   * Forzar limpieza de contenedores huérfanos relacionados a un submission
+   */
+  private async forceCleanupContainers(submissionId: number): Promise<void> {
+    try {
+      // Eliminar contenedores detenidos que coincidan con nuestras imágenes runner
+      const cleanupCmd = 'docker container prune -f --filter "label=com.docker.compose.project=codechallenges"';
+      await execPromise(cleanupCmd, { timeout: 5000 }).catch(() => {
+        // Ignorar errores de limpieza
+        this.logger.debug(`[${submissionId}] Container cleanup completed or not needed`);
+      });
+    } catch (error) {
+      // No fallar por errores de limpieza
+      this.logger.debug(`[${submissionId}] Container cleanup skipped: ${error.message}`);
     }
   }
 
@@ -290,6 +311,11 @@ export class EnhancedRunnerService {
     } catch (error: any) {
       const timeMs = Date.now() - startTime;
 
+      // Forzar limpieza de contenedores que puedan estar colgados
+      await this.killRunningContainers(image).catch(() => {
+        // Ignorar errores de limpieza
+      });
+
       // Detectar tipo de error
       if (error.killed || error.signal === 'SIGTERM') {
         // Timeout alcanzado
@@ -310,6 +336,34 @@ export class EnhancedRunnerService {
         output: truncateOutput(error.stdout || ''),
         errorMsg: truncateOutput(error.stderr || error.message),
       };
+    }
+  }
+
+  /**
+   * Matar contenedores activos de una imagen específica (para casos de timeout)
+   */
+  private async killRunningContainers(image: string): Promise<void> {
+    try {
+      // Listar contenedores activos de esta imagen
+      const listCmd = `docker ps -q --filter ancestor=${image}`;
+      const { stdout } = await execPromise(listCmd, { timeout: 2000 });
+      
+      const containerIds = stdout.trim().split('\n').filter(id => id.length > 0);
+      
+      if (containerIds.length > 0) {
+        this.logger.warn(`🧹 Killing ${containerIds.length} hanging container(s) for image ${image}`);
+        
+        // Matar contenedores en paralelo
+        await Promise.all(
+          containerIds.map(id => 
+            execPromise(`docker kill ${id}`, { timeout: 2000 })
+              .catch(err => this.logger.debug(`Failed to kill container ${id}: ${err.message}`))
+          )
+        );
+      }
+    } catch (error) {
+      // No fallar por errores de limpieza
+      this.logger.debug(`Container kill cleanup skipped: ${error.message}`);
     }
   }
 

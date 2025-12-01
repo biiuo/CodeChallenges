@@ -200,10 +200,39 @@ export class CoursesController {
   @ApiOperation({ summary: 'Listar retos del curso (miembros del curso o profesores)' })
   async listChallenges(@Param('id') id: string, @Req() req: any) {
     const role = req.user?.role;
+    const userId = req.user?.userId;
+    
+    console.log(`[listChallenges] CourseId: ${id}, Role: ${role}, UserId: ${userId}`);
+    
+    const includeOptions = {
+      include: {
+        testcases: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' as const },
+    };
+    
     if (role === 'STUDENT') {
-      return this.prisma.challenge.findMany({ where: { courses: { some: { id } }, status: 'PUBLISHED' } });
+      const challenges = await this.prisma.challenge.findMany({ 
+        where: { courses: { some: { id } }, status: 'PUBLISHED' },
+        ...includeOptions
+      });
+      console.log(`[listChallenges] Found ${challenges.length} published challenges for student`);
+      return challenges;
     }
-    return this.prisma.challenge.findMany({ where: { courses: { some: { id } } } });
+    
+    const challenges = await this.prisma.challenge.findMany({ 
+      where: { courses: { some: { id } } },
+      ...includeOptions
+    });
+    console.log(`[listChallenges] Found ${challenges.length} total challenges for admin/professor`);
+    return challenges;
   }
 
   @Get(':id/my/challenges')
@@ -211,7 +240,20 @@ export class CoursesController {
   @UseGuards(IsStudentOfCourseGuard)
   @ApiOperation({ summary: 'Listar retos del curso (estudiante)' })
   async listMyChallenges(@Param('id') id: string) {
-    return this.prisma.challenge.findMany({ where: { courses: { some: { id } }, status: 'PUBLISHED' } });
+    return this.prisma.challenge.findMany({ 
+      where: { courses: { some: { id } }, status: 'PUBLISHED' },
+      include: {
+        testcases: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' as const },
+    });
   }
 
   @Post(':id/challenges')
@@ -237,6 +279,39 @@ export class CoursesController {
     return {
       message: `Successfully added ${challengeIds.length} challenge(s) to course`,
       addedCount: challengeIds.length
+    };
+  }
+
+  @Put(':id/challenges/:challengeId/publish')
+  @Roles('ADMIN','PROFESSOR')
+  @UseGuards(IsProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Publicar/Despublicar un challenge del curso (ADMIN/PROFESSOR)' })
+  async publishChallengeInCourse(
+    @Param('id') id: string, 
+    @Param('challengeId') challengeId: string,
+    @Body() body: { status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED' }
+  ) {
+    // Verificar que el challenge está en el curso
+    const course = await this.prisma.course.findFirst({
+      where: {
+        id,
+        challenges: { some: { id: challengeId } }
+      }
+    });
+    
+    if (!course) {
+      throw new Error('Challenge not found in this course');
+    }
+    
+    // Actualizar el status del challenge
+    const updated = await this.prisma.challenge.update({
+      where: { id: challengeId },
+      data: { status: body.status }
+    });
+    
+    return {
+      message: `Challenge ${body.status === 'PUBLISHED' ? 'published' : 'unpublished'} successfully`,
+      challenge: updated
     };
   }
 

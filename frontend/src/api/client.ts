@@ -137,6 +137,8 @@ export const coursesApi = {
     api.post(`/courses/${targetCourseId}/clone-from/${sourceCourseId}`),
   publishCourse: (courseId: string, isPublished: boolean) => 
     api.put(`/courses/${courseId}/publish`, { isPublished }),
+  publishChallengeInCourse: (courseId: string, challengeId: string, status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED') =>
+    api.put(`/courses/${courseId}/challenges/${challengeId}/publish`, { status }),
 };
 
 export const evaluationsApi = {

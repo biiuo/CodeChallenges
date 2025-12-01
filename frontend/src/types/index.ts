@@ -95,6 +95,8 @@ export interface CreateSubmissionDto {
   challengeId: string;
   code: string;
   language: string;
+  courseId?: string;
+  evaluationId?: number;
 }
 
 export interface TestCaseResult {

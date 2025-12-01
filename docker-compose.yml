@@ -49,44 +49,37 @@ services:
       - backend
       - redis
       - db
-      - runner-python
-      - runner-node
-      - runner-java
-      - runner-cpp
+    # Los runners no son servicios, solo imágenes preconstruidas
 
-  # Code execution runners (built once, images reused by worker via docker run)
+  # Code execution runner images (built but not running as services)
+  # These images are used by the worker via 'docker run' when needed
   runner-python:
     image: runner-python:latest
     build:
       context: ./runners
       dockerfile: runner-python/Dockerfile
-    command: ["tail", "-f", "/dev/null"]
-    restart: "no"
+    profiles: ["build-only"]  # No se inicia, solo se construye
 
   runner-node:
     image: runner-node:latest
     build:
       context: ./runners
       dockerfile: runner-node/Dockerfile
-    command: ["tail", "-f", "/dev/null"]
-    restart: "no"
+    profiles: ["build-only"]
 
   runner-java:
     image: runner-java:latest
     build:
       context: ./runners
       dockerfile: runner-java/Dockerfile
-    command: ["tail", "-f", "/dev/null"]
-    restart: "no"
+    profiles: ["build-only"]
 
   runner-cpp:
     image: runner-cpp:latest
     build:
       context: ./runners
       dockerfile: runner-cpp/Dockerfile
-    command: ["tail", "-f", "/dev/null"]
-    restart: "no"
-    # Code execution runners
+    profiles: ["build-only"]
   
 
   db:

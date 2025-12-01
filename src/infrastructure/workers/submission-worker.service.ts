@@ -29,6 +29,9 @@ export class SubmissionWorkerService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('🚀 Starting Submission Worker...');
     this.isRunning = true;
     this.workerPromise = this.workerLoop();
+    
+    // Iniciar limpieza periódica de contenedores (cada 5 minutos)
+    this.startPeriodicCleanup();
   }
 
   async onModuleDestroy() {
@@ -119,6 +122,61 @@ export class SubmissionWorkerService implements OnModuleInit, OnModuleDestroy {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Limpieza periódica de contenedores huérfanos
+   */
+  private startPeriodicCleanup(): void {
+    const cleanupInterval = 5 * 60 * 1000; // 5 minutos
+    
+    const cleanup = async () => {
+      if (!this.isRunning) return;
+      
+      try {
+        this.logger.log('🧹 Running periodic container cleanup...');
+        
+        // Eliminar contenedores detenidos
+        await this.exec('docker container prune -f').catch(() => {});
+        
+        // Matar contenedores colgados de nuestras imágenes runner
+        const images = ['runner-python:latest', 'runner-node:latest', 'runner-cpp:latest', 'runner-java:latest'];
+        
+        for (const image of images) {
+          const { stdout } = await this.exec(`docker ps -q --filter ancestor=${image}`).catch(() => ({ stdout: '' }));
+          const containerIds = stdout.trim().split('\n').filter(id => id.length > 0);
+          
+          if (containerIds.length > 0) {
+            this.logger.warn(`🧹 Found ${containerIds.length} hanging containers for ${image}, killing...`);
+            await Promise.all(
+              containerIds.map(id => this.exec(`docker kill ${id}`).catch(() => {}))
+            );
+          }
+        }
+        
+        this.logger.log('✅ Periodic cleanup completed');
+      } catch (error) {
+        this.logger.error('❌ Periodic cleanup error:', error);
+      }
+      
+      // Programar siguiente limpieza
+      if (this.isRunning) {
+        setTimeout(cleanup, cleanupInterval);
+      }
+    };
+    
+    // Iniciar primera limpieza después de 30 segundos
+    setTimeout(cleanup, 30000);
+  }
+
+  /**
+   * Ejecutar comando shell (helper)
+   */
+  private exec(command: string): Promise<{ stdout: string; stderr: string }> {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execPromise = promisify(exec);
+    return execPromise(command, { timeout: 5000 });
   }
 
   /**

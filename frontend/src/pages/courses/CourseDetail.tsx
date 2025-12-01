@@ -189,7 +189,7 @@ export const CourseDetail: React.FC = () => {
                     {challenges.map((challenge: any) => (
                       <Link
                         key={challenge.id}
-                        to={`/challenges/${challenge.id}`}
+                        to={`/challenges/${challenge.id}?courseId=${id}`}
                         className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border border-gray-200"
                       >
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">{challenge.title}</h3>

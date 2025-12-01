@@ -127,7 +127,7 @@ export const CourseChallengesManager: React.FC<Props> = ({ courseId }) => {
             
             <p className="text-gray-600 text-sm mb-4 line-clamp-3">{challenge.description}</p>
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDifficultyColor(challenge.difficulty)}`}>
                 {challenge.difficulty}
               </span>
@@ -135,6 +135,49 @@ export const CourseChallengesManager: React.FC<Props> = ({ courseId }) => {
                 <span>⏱️ {challenge.timeLimit}ms</span>
                 <span>💾 {challenge.memoryLimit}MB</span>
               </div>
+            </div>
+
+            {/* Status Badge */}
+            <div className="mb-3">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                challenge.status === 'PUBLISHED' ? 'bg-green-100 text-green-800' :
+                challenge.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {challenge.status}
+              </span>
+              {challenge.status !== 'PUBLISHED' && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await coursesApi.publishChallengeInCourse(courseId, challenge.id, 'PUBLISHED');
+                      alert('Challenge published successfully!');
+                      fetchData();
+                    } catch (error: any) {
+                      alert(error.response?.data?.message || 'Failed to publish challenge');
+                    }
+                  }}
+                  className="ml-2 text-xs text-green-600 hover:text-green-800 underline"
+                >
+                  Publish
+                </button>
+              )}
+              {challenge.status === 'PUBLISHED' && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await coursesApi.publishChallengeInCourse(courseId, challenge.id, 'DRAFT');
+                      alert('Challenge unpublished successfully!');
+                      fetchData();
+                    } catch (error: any) {
+                      alert(error.response?.data?.message || 'Failed to unpublish challenge');
+                    }
+                  }}
+                  className="ml-2 text-xs text-gray-600 hover:text-gray-800 underline"
+                >
+                  Unpublish
+                </button>
+              )}
             </div>
 
             {challenge.tags && challenge.tags.length > 0 && (
