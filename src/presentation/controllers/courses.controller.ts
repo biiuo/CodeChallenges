@@ -335,6 +335,7 @@ export class CoursesController {
     @Query('status') status?: string,
     @Query('evaluationId') evaluationId?: string,
   ) {
+    // Solo submissions que tienen courseId (hechas desde el curso)
     const where: any = { courseId: id };
     
     if (studentId) {
@@ -390,8 +391,30 @@ export class CoursesController {
     @Query('status') status?: string,
   ) {
     const userId = req.user?.userId;
-    const where: any = { courseId: id, userId };
     
+    // Obtener challenges del curso
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      select: { 
+        challenges: { 
+          select: { id: true } 
+        } 
+      }
+    });
+
+    if (!course) {
+      return [];
+    }
+
+    const challengeIdsInCourse = course.challenges.map(c => c.id);
+
+    // Solo submissions del estudiante que tienen courseId (hechas desde el curso)
+    const where: any = {
+      userId,
+      courseId: id
+    };
+    
+    // Aplicar filtros adicionales
     if (evaluationId) {
       where.evaluationId = parseInt(evaluationId, 10);
     }

@@ -25,8 +25,10 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - redis
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   worker:
     build:
@@ -51,35 +53,48 @@ services:
       - db
     # Los runners no son servicios, solo imágenes preconstruidas
 
-  # Code execution runner images (built but not running as services)
-  # These images are used by the worker via 'docker run' when needed
+  # Code execution runner images
+  # These are built automatically but only used by worker via 'docker run'
+  # Using 'scale: 0' ensures images are built but containers don't start
   runner-python:
     image: runner-python:latest
     build:
       context: ./runners
       dockerfile: runner-python/Dockerfile
-    profiles: ["build-only"]  # No se inicia, solo se construye
+    command: "true"  # No-op command
+    deploy:
+      replicas: 0  # No iniciar contenedores
+    restart: "no"
 
   runner-node:
     image: runner-node:latest
     build:
       context: ./runners
       dockerfile: runner-node/Dockerfile
-    profiles: ["build-only"]
+    command: "true"
+    deploy:
+      replicas: 0
+    restart: "no"
 
   runner-java:
     image: runner-java:latest
     build:
       context: ./runners
       dockerfile: runner-java/Dockerfile
-    profiles: ["build-only"]
+    command: "true"
+    deploy:
+      replicas: 0
+    restart: "no"
 
   runner-cpp:
     image: runner-cpp:latest
     build:
       context: ./runners
       dockerfile: runner-cpp/Dockerfile
-    profiles: ["build-only"]
+    command: "true"
+    deploy:
+      replicas: 0
+    restart: "no"
   
 
   db:

@@ -275,7 +275,22 @@ let CoursesController = class CoursesController {
     }
     async listMySubmissions(id, req, evaluationId, challengeId, status) {
         const userId = req.user?.userId;
-        const where = { courseId: id, userId };
+        const course = await this.prisma.course.findUnique({
+            where: { id },
+            select: {
+                challenges: {
+                    select: { id: true }
+                }
+            }
+        });
+        if (!course) {
+            return [];
+        }
+        const challengeIdsInCourse = course.challenges.map(c => c.id);
+        const where = {
+            userId,
+            courseId: id
+        };
         if (evaluationId) {
             where.evaluationId = parseInt(evaluationId, 10);
         }
