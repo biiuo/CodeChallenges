@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { challengesApi } from '../../api/client';
+import { challengesApi, api } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 
 export const CreateChallenge: React.FC = () => {
@@ -52,10 +52,8 @@ export const CreateChallenge: React.FC = () => {
         return;
       }
       
-      // Build payload with proper types
+      // Build payload with proper types (authorId comes from token)
       const payload = {
-        // Ensure authorId is a string (backend validation requires string)
-        authorId: String(user.id),
         title: data.title.trim(),
         description: data.description.trim(),
         difficulty: data.difficulty || 'EASY',
@@ -66,7 +64,10 @@ export const CreateChallenge: React.FC = () => {
       };
       
       console.log('Creating challenge with payload:', payload);
-      const response = await challengesApi.create(payload);
+      // Send with explicit Authorization header to ensure backend receives token
+      const response = await api.post('/challenges', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       console.log('Challenge created successfully:', response.data);
       navigate('/challenges');
     } catch (err: any) {

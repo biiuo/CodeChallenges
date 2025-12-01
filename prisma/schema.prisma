@@ -80,7 +80,6 @@ model Course {
   description String?                                 // Descripción del curso
   category    String?                                 // Categoría (ej: "web-development", "data-science")
   level       String?                                 // Nivel: "beginner", "intermediate", "advanced"
-  // NRC field removed (definitivo)
   group       String?                                 // Grupo (ej: "1", "A")
   coverImage  String?                                 // URL de la imagen de portada del curso
   isPublished Boolean  @default(false)                // Si el curso está publicado

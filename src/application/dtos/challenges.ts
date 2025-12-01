@@ -89,10 +89,12 @@ export class CreateChallengeDto {
 
   @ApiProperty({ 
     example: 'cm123abc456def789', 
-    description: 'ID del autor que crea el reto' 
+    description: 'ID del autor que crea el reto (se extrae automáticamente del token JWT)',
+    required: false
   })
+  @IsOptional()
   @IsString()
-  authorId!: string;
+  authorId?: string;
 
   @ApiProperty({ 
     enum: ChallengeStatus,
