@@ -97,7 +97,7 @@ export const coursesApi = {
   getByCode: (code: string) => api.get<Course>(`/courses/${code}`),
   create: (data: CreateCourseDto) => api.post<Course>('/courses', data),
   update: (id: string, data: Partial<CreateCourseDto>) => api.put<Course>(`/courses/${id}`, data),
-  delete: (id: string) => api.delete(`/courses/${id}`),
+  delete: (code: string) => api.delete(`/courses/${code}`),
   getChallenges: (id: string) => api.get<Challenge[]>(`/courses/${id}/challenges`),
   getMyChallenges: (id: string) => api.get<Challenge[]>(`/courses/${id}/my/challenges`),
   getSubmissions: (id: string, params?: any) => api.get<Submission[]>(`/courses/${id}/submissions`, { params }),
@@ -137,6 +137,10 @@ export const coursesApi = {
     api.post(`/courses/${targetCourseId}/clone-from/${sourceCourseId}`),
   publishCourse: (courseId: string, isPublished: boolean) => 
     api.put(`/courses/${courseId}/publish`, { isPublished }),
+};
+
+export const geminiApi = {
+  chat: (message: string) => api.post<{ response: string }>('/gemini/chat', { message }),
 };
 
 export const evaluationsApi = {

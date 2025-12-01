@@ -9,7 +9,6 @@ import { ChallengeModule} from './presentation/modules/challenge.module';
 import { AuthModule } from './presentation/modules/auth.module';
 import { SubmissionModule } from './presentation/modules/submission.module';
 import { CoursesExtendedModule } from './presentation/modules/courses-extended.module';
-import { ChallengesExtendedModule } from './presentation/modules/challenges-extended.module';
 import { EvaluationsModule } from './presentation/modules/evaluations.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
@@ -19,6 +18,7 @@ import { ObservabilityModule } from './infrastructure/observability/observabilit
 import { MetricsController } from './presentation/controllers/metrics.controller';
 import { AdminController } from './presentation/controllers/admin.controller';
 import { PrismaModule } from './infrastructure/prisma.module';
+import { GeminiModule } from './presentation/modules/gemini.module';
 
 @Module({
   imports: [ 
@@ -29,11 +29,11 @@ import { PrismaModule } from './infrastructure/prisma.module';
     AuthModule,
     SubmissionModule,
     CoursesExtendedModule,
-    ChallengesExtendedModule,
     EvaluationsModule,
     RedisModule,
     RunnerModule,
     ObservabilityModule,
+    GeminiModule,
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: async () => ({

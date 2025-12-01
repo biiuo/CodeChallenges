@@ -40,6 +40,7 @@ import { CHALLENGE_REPOSITORY } from '../../application/tokens';
 import { Role } from '../../domain/entities/user.entity';
 import { Roles } from '../decorators/roles.decorator';
 import { RolesGuard } from '../guards/roles.guard';
+import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 
 @ApiTags('Challenges')
 @Controller('challenges')
@@ -54,6 +55,7 @@ export class ChallengesController {
     private readonly updateChallengeUseCase: UpdateChallengeUseCase,
     private readonly deleteChallengeUseCase: DeleteChallengeUseCase,
     @Inject(CHALLENGE_REPOSITORY) private readonly challengeRepo: ChallengeRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post()
@@ -449,5 +451,52 @@ export class ChallengesController {
       message: 'Test cases added successfully',
       count: testcases.length,
     };
+  }
+
+  @Get(':id/testcases')
+  @Roles(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)
+  @ApiOperation({ summary: 'Listar testcases por challenge (oculta invisible para STUDENT)' })
+  async listTestcases(@Param('id') id: string, @Req() req: any) {
+    const role = req.user?.role;
+    if (role === 'STUDENT') {
+      return this.prisma.testcase.findMany({ where: { challengeId: id, visible: true } });
+    }
+    return this.prisma.testcase.findMany({ where: { challengeId: id } });
+  }
+
+  @Delete(':id/testcases/:caseNumber')
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @ApiOperation({ summary: 'Eliminar testcase (ADMIN/PROFESSOR)' })
+  async deleteTestcase(@Param('id') id: string, @Param('caseNumber') caseNumber: string) {
+    await this.prisma.testcase.delete({ where: { challengeId_caseNumber: { challengeId: id, caseNumber: Number(caseNumber) } } });
+    return { ok: true };
+  }
+
+  @Post(':id/publish')
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @ApiOperation({ summary: 'Publicar challenge' })
+  async publish(@Param('id') id: string) {
+    return this.prisma.challenge.update({ where: { id }, data: { status: 'PUBLISHED' } });
+  }
+
+  @Post(':id/archive')
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @ApiOperation({ summary: 'Archivar challenge' })
+  async archive(@Param('id') id: string) {
+    return this.prisma.challenge.update({ where: { id }, data: { status: 'ARCHIVED' } });
+  }
+
+  @Post(':id/assign-course/:courseId')
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @ApiOperation({ summary: 'Asignar challenge a curso' })
+  async assignToCourse(@Param('id') id: string, @Param('courseId') courseId: string) {
+    return this.prisma.challenge.update({ where: { id }, data: { courses: { connect: { id: courseId } } } });
+  }
+
+  @Delete(':id/assign-course/:courseId')
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @ApiOperation({ summary: 'Desasignar challenge de curso' })
+  async unassignFromCourse(@Param('id') id: string, @Param('courseId') courseId: string) {
+    return this.prisma.challenge.update({ where: { id }, data: { courses: { disconnect: { id: courseId } } } });
   }
 }
