@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { challengesApi, submissionsApi } from '../../api/client';
@@ -8,6 +8,9 @@ import { useAuth } from '../../context/AuthContext';
 
 export const ChallengeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const courseId = searchParams.get('courseId');
+  const evaluationId = searchParams.get('evaluationId');
   const { user } = useAuth();
   const { register, handleSubmit, reset } = useForm();
   const [submissionResult, setSubmissionResult] = React.useState<Submission | null>(null);
@@ -25,11 +28,22 @@ export const ChallengeDetail: React.FC = () => {
 
   const onSubmit = async (data: any) => {
     try {
-      const payload = {
+      const payload: any = {
         challengeId: id!,
         code: data.code,
         language: data.language,
       };
+      
+      // Si viene de un curso, incluir el courseId
+      if (courseId) {
+        payload.courseId = courseId;
+      }
+      
+      // Si viene de una evaluación, incluir el evaluationId
+      if (evaluationId) {
+        payload.evaluationId = evaluationId;
+      }
+      
       const response = await submissionsApi.create(payload);
       setSubmissionResult(response.data);
       reset();

@@ -20,6 +20,11 @@ import { Users } from './pages/admin/Users';
 import UserActivity from './pages/admin/UserActivity';
 import ProfessorPanel from './pages/admin/ProfessorPanel';
 import { UserManagement } from './pages/admin/UserManagement';
+import { CreateEvaluation } from './pages/evaluations/CreateEvaluation';
+import { EditEvaluation } from './pages/evaluations/EditEvaluation';
+import { EvaluationDetail } from './pages/evaluations/EvaluationDetail';
+import { EvaluationResults } from './pages/evaluations/EvaluationResults';
+import { MyEvaluationResults } from './pages/evaluations/MyEvaluationResults';
 
 const queryClient = new QueryClient();
 
@@ -46,6 +51,11 @@ function App() {
                 <Route path="/courses" element={<CourseList />} />
                 <Route path="/courses/catalog" element={<CourseCatalog />} />
                 <Route path="/courses/:id" element={<CourseDetail />} />
+                <Route path="/courses/:courseId/evaluations/create" element={<CreateEvaluation />} />
+                <Route path="/courses/:courseId/evaluations/:id/edit" element={<EditEvaluation />} />
+                <Route path="/evaluations/:id" element={<EvaluationDetail />} />
+                <Route path="/evaluations/:id/results" element={<EvaluationResults />} />
+                <Route path="/evaluations/:id/my-results" element={<MyEvaluationResults />} />
                 <Route path="/submissions" element={<SubmissionList />} />
                 <Route path="/submissions/:id" element={<SubmissionDetail />} />
               </Route>

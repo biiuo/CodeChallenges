@@ -200,10 +200,39 @@ export class CoursesController {
   @ApiOperation({ summary: 'Listar retos del curso (miembros del curso o profesores)' })
   async listChallenges(@Param('id') id: string, @Req() req: any) {
     const role = req.user?.role;
+    const userId = req.user?.userId;
+    
+    console.log(`[listChallenges] CourseId: ${id}, Role: ${role}, UserId: ${userId}`);
+    
+    const includeOptions = {
+      include: {
+        testcases: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' as const },
+    };
+    
     if (role === 'STUDENT') {
-      return this.prisma.challenge.findMany({ where: { courses: { some: { id } }, status: 'PUBLISHED' } });
+      const challenges = await this.prisma.challenge.findMany({ 
+        where: { courses: { some: { id } }, status: 'PUBLISHED' },
+        ...includeOptions
+      });
+      console.log(`[listChallenges] Found ${challenges.length} published challenges for student`);
+      return challenges;
     }
-    return this.prisma.challenge.findMany({ where: { courses: { some: { id } } } });
+    
+    const challenges = await this.prisma.challenge.findMany({ 
+      where: { courses: { some: { id } } },
+      ...includeOptions
+    });
+    console.log(`[listChallenges] Found ${challenges.length} total challenges for admin/professor`);
+    return challenges;
   }
 
   @Get(':id/my/challenges')
@@ -211,7 +240,20 @@ export class CoursesController {
   @UseGuards(IsStudentOfCourseGuard)
   @ApiOperation({ summary: 'Listar retos del curso (estudiante)' })
   async listMyChallenges(@Param('id') id: string) {
-    return this.prisma.challenge.findMany({ where: { courses: { some: { id } }, status: 'PUBLISHED' } });
+    return this.prisma.challenge.findMany({ 
+      where: { courses: { some: { id } }, status: 'PUBLISHED' },
+      include: {
+        testcases: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' as const },
+    });
   }
 
   @Post(':id/challenges')
@@ -240,6 +282,39 @@ export class CoursesController {
     };
   }
 
+  @Put(':id/challenges/:challengeId/publish')
+  @Roles('ADMIN','PROFESSOR')
+  @UseGuards(IsProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Publicar/Despublicar un challenge del curso (ADMIN/PROFESSOR)' })
+  async publishChallengeInCourse(
+    @Param('id') id: string, 
+    @Param('challengeId') challengeId: string,
+    @Body() body: { status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED' }
+  ) {
+    // Verificar que el challenge está en el curso
+    const course = await this.prisma.course.findFirst({
+      where: {
+        id,
+        challenges: { some: { id: challengeId } }
+      }
+    });
+    
+    if (!course) {
+      throw new Error('Challenge not found in this course');
+    }
+    
+    // Actualizar el status del challenge
+    const updated = await this.prisma.challenge.update({
+      where: { id: challengeId },
+      data: { status: body.status }
+    });
+    
+    return {
+      message: `Challenge ${body.status === 'PUBLISHED' ? 'published' : 'unpublished'} successfully`,
+      challenge: updated
+    };
+  }
+
   @Post(':id/challenges/:challengeId')
   @Roles('ADMIN','PROFESSOR')
   @UseGuards(IsProfessorOfCourseGuard)
@@ -260,6 +335,17 @@ export class CoursesController {
     @Query('status') status?: string,
     @Query('evaluationId') evaluationId?: string,
   ) {
+    // Obtener challenges del curso
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      select: { challenges: { select: { id: true } } }
+    });
+
+    if (!course) {
+      return [];
+    }
+
+    // Solo submissions que tienen courseId (hechas desde el curso)
     const where: any = { courseId: id };
     
     if (studentId) {
@@ -315,8 +401,28 @@ export class CoursesController {
     @Query('status') status?: string,
   ) {
     const userId = req.user?.userId;
-    const where: any = { courseId: id, userId };
     
+    // Obtener challenges del curso
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      select: { 
+        challenges: { 
+          select: { id: true } 
+        } 
+      }
+    });
+
+    if (!course) {
+      return [];
+    }
+
+    // Solo submissions del estudiante que tienen courseId (hechas desde el curso)
+    const where: any = {
+      userId,
+      courseId: id
+    };
+    
+    // Aplicar filtros adicionales
     if (evaluationId) {
       where.evaluationId = parseInt(evaluationId, 10);
     }
@@ -542,6 +648,93 @@ export class CoursesController {
   // ============================================
   // ESTADÍSTICAS Y REPORTES
   // ============================================
+  // EVALUATIONS
+  // ============================================
+
+  @Get(':id/evaluations')
+  @Roles('ADMIN','PROFESSOR','STUDENT')
+  @ApiOperation({ summary: 'Listar evaluaciones del curso' })
+  async listEvaluations(@Param('id') courseId: string, @Req() req: any) {
+    const role = req.user?.role;
+    const userId = req.user?.userId;
+
+    // Verificar pertenencia al curso
+    if (role === 'STUDENT') {
+      const enrollment = await this.prisma.courseStudent.findUnique({
+        where: { userId_courseId: { userId, courseId } }
+      });
+      if (!enrollment) {
+        throw new Error('Not enrolled in this course');
+      }
+    }
+
+    if (role === 'PROFESSOR') {
+      const isProfessor = await this.prisma.course.findFirst({
+        where: { 
+          id: courseId,
+          professors: { some: { id: userId } }
+        }
+      });
+      if (!isProfessor) {
+        throw new Error('Not a professor of this course');
+      }
+    }
+
+    return this.prisma.evaluation.findMany({
+      where: { courseId },
+      include: {
+        challenges: {
+          include: {
+            challenge: {
+              select: { id: true, title: true, difficulty: true }
+            }
+          }
+        }
+      },
+      orderBy: { date: 'desc' }
+    });
+  }
+
+  @Post(':id/evaluations')
+  @Roles('ADMIN','PROFESSOR')
+  @UseGuards(IsProfessorOfCourseGuard)
+  @ApiOperation({ summary: 'Crear evaluación en el curso (ADMIN/PROFESSOR)' })
+  async createEvaluation(@Param('id') courseId: string, @Body() dto: any) {
+    const lastEval = await this.prisma.evaluation.findFirst({
+      where: { courseId },
+      orderBy: { evaluationNumber: 'desc' },
+    });
+    const evaluationNumber = (lastEval?.evaluationNumber || 0) + 1;
+
+    return this.prisma.evaluation.create({
+      data: {
+        name: dto.name,
+        description: dto.description,
+        date: new Date(dto.date),
+        maxDuration: dto.maxDuration,
+        courseId,
+        evaluationNumber,
+        ...(dto.challengeIds && dto.challengeIds.length > 0 && {
+          challenges: {
+            create: dto.challengeIds.map((challengeId: string) => ({
+              challengeId,
+            })),
+          },
+        }),
+      },
+      include: {
+        challenges: {
+          include: {
+            challenge: {
+              select: { id: true, title: true, difficulty: true }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ============================================
 
   @Get(':id/statistics')
   @Roles('ADMIN','PROFESSOR')
@@ -679,61 +872,4 @@ export class CoursesController {
     };
   }
 
-  @Get(':id/evaluations')
-  @Roles('ADMIN','PROFESSOR','STUDENT')
-  @UseGuards(IsMemberOrProfessorOfCourseGuard)
-  @ApiOperation({ summary: 'Listar evaluaciones del curso' })
-  async listEvaluations(@Param('id') courseId: string, @Req() req: any) {
-    const role = req.user?.role;
-    const userId = req.user?.userId;
-
-    const evaluations = await this.prisma.evaluation.findMany({
-      where: { courseId },
-      include: {
-        challenges: {
-          include: {
-            challenge: {
-              select: { id: true, title: true, difficulty: true }
-            }
-          }
-        },
-        _count: {
-          select: { submissions: true }
-        }
-      },
-      orderBy: { evaluationNumber: 'asc' }
-    });
-
-    // Para estudiantes, agregar información de sus submissions
-    if (role === 'STUDENT' && userId) {
-      const evaluationsWithStudentData = await Promise.all(
-        evaluations.map(async (evaluation) => {
-          const studentSubmissions = await this.prisma.submission.findMany({
-            where: {
-              evaluationId: evaluation.id,
-              userId
-            },
-            select: {
-              id: true,
-              status: true,
-              score: true,
-              challengeId: true,
-              createdAt: true
-            }
-          });
-
-          return {
-            ...evaluation,
-            studentSubmissions,
-            studentTotalScore: studentSubmissions.reduce((sum, s) => sum + (s.score || 0), 0),
-            studentCompleted: studentSubmissions.length > 0
-          };
-        })
-      );
-
-      return evaluationsWithStudentData;
-    }
-
-    return evaluations;
-  }
 }

@@ -5,21 +5,7 @@ import { Roles } from '../decorators/roles.decorator';
 import { RolesGuard } from '../guards/roles.guard';
 import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import { IsProfessorOfCourseGuard } from '../guards/is-professor-of-course.guard';
-
-class CreateEvaluationDto {
-  name!: string;
-  description!: string;
-  date!: string; // ISO date
-  maxDuration!: number; // minutes
-  courseId!: string;
-}
-
-class UpdateEvaluationDto {
-  name?: string;
-  description?: string;
-  date?: string;
-  maxDuration?: number;
-}
+import { CreateEvaluationDto, UpdateEvaluationDto } from '../../application/dtos/evaluation.dto';
 
 @ApiTags('Evaluations')
 @ApiBearerAuth('access')
@@ -28,12 +14,75 @@ class UpdateEvaluationDto {
 export class EvaluationsController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @Post('courses/:courseId/evaluations')
+  @Roles('ADMIN','PROFESSOR')
+  @ApiOperation({ summary: 'Crear evaluación con challenges (ADMIN/PROFESSOR)' })
+  async createWithChallenges(@Param('courseId') courseId: string, @Body() dto: any, @Req() req: any) {
+    const role = req.user?.role;
+    const userId = req.user?.userId;
+    
+    // PROFESSOR: Verificar que sea profesor del curso
+    if (role === 'PROFESSOR' && userId) {
+      const course = await this.prisma.course.findFirst({
+        where: { 
+          id: courseId,
+          professors: { some: { id: userId } }
+        }
+      });
+      if (!course) {
+        throw new Error('You are not a professor of this course');
+      }
+    }
+    
+    const lastEval = await this.prisma.evaluation.findFirst({
+      where: { courseId },
+      orderBy: { evaluationNumber: 'desc' },
+    });
+    const evaluationNumber = (lastEval?.evaluationNumber || 0) + 1;
+    
+    const evaluation = await this.prisma.evaluation.create({
+      data: {
+        name: dto.name,
+        description: dto.description,
+        date: new Date(dto.date),
+        maxDuration: dto.maxDuration,
+        courseId,
+        evaluationNumber,
+        ...(dto.challengeIds && dto.challengeIds.length > 0 && {
+          challenges: {
+            create: dto.challengeIds.map((challengeId: string) => ({
+              challengeId,
+            })),
+          },
+        }),
+      },
+      include: {
+        course: {
+          select: { id: true, name: true, code: true }
+        },
+        challenges: {
+          include: {
+            challenge: {
+              select: { id: true, title: true, difficulty: true }
+            }
+          }
+        }
+      }
+    });
+    
+    return evaluation;
+  }
+
   @Post()
   @Roles('ADMIN','PROFESSOR')
   @ApiOperation({ summary: 'Crear evaluación (ADMIN/PROFESSOR)' })
   async create(@Body() dto: CreateEvaluationDto, @Req() req: any) {
     const role = req.user?.role;
     const userId = req.user?.userId;
+    
+    if (!dto.courseId) {
+      throw new Error('courseId is required');
+    }
     
     // PROFESSOR: Verificar que sea profesor del curso
     if (role === 'PROFESSOR' && userId) {
@@ -192,7 +241,13 @@ export class EvaluationsController {
       }
     }
     
-    return evaluation;
+    // Transformar la estructura de challenges para el frontend
+    const transformedEvaluation = {
+      ...evaluation,
+      challenges: evaluation.challenges.map(ec => ec.challenge)
+    };
+    
+    return transformedEvaluation;
   }
 
   @Put(':id')
@@ -224,6 +279,22 @@ export class EvaluationsController {
       }
     }
     
+    // Si se proporcionan challengeIds, actualizar las relaciones
+    if (dto.challengeIds && dto.challengeIds.length > 0) {
+      // Eliminar relaciones existentes
+      await this.prisma.evaluationChallenge.deleteMany({
+        where: { evaluationId: Number(id) }
+      });
+
+      // Crear nuevas relaciones
+      await this.prisma.evaluationChallenge.createMany({
+        data: dto.challengeIds.map(challengeId => ({
+          evaluationId: Number(id),
+          challengeId: challengeId
+        }))
+      });
+    }
+
     return this.prisma.evaluation.update({
       where: { id: Number(id) },
       data: { 
@@ -235,6 +306,13 @@ export class EvaluationsController {
       include: {
         course: {
           select: { id: true, name: true, code: true }
+        },
+        challenges: {
+          include: {
+            challenge: {
+              select: { id: true, title: true, description: true, difficulty: true }
+            }
+          }
         }
       }
     });
@@ -269,6 +347,12 @@ export class EvaluationsController {
       }
     }
     
+    // Eliminar primero las relaciones EvaluationChallenge
+    await this.prisma.evaluationChallenge.deleteMany({
+      where: { evaluationId: Number(id) }
+    });
+
+    // Ahora eliminar la evaluación
     return this.prisma.evaluation.delete({ 
       where: { id: Number(id) },
       include: {
@@ -481,6 +565,93 @@ export class EvaluationsController {
         averageScore: s._avg.score ? Math.round(s._avg.score) : 0
       })),
       topStudents: topStudentsWithNames
+    };
+  }
+
+  @Get(':id/my-results')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: 'Obtener mis resultados en la evaluación (STUDENT)' })
+  async getMyResults(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.userId;
+    
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+    
+    const evaluation = await this.prisma.evaluation.findUnique({
+      where: { id: Number(id) },
+      include: {
+        challenges: {
+          include: {
+            challenge: {
+              select: { id: true, title: true, difficulty: true }
+            }
+          }
+        }
+      }
+    });
+    
+    if (!evaluation) {
+      throw new Error('Evaluation not found');
+    }
+    
+    // Verificar que el estudiante esté inscrito en el curso
+    const enrollment = await this.prisma.courseStudent.findUnique({
+      where: { userId_courseId: { userId, courseId: evaluation.courseId } }
+    });
+    
+    if (!enrollment) {
+      throw new Error('You are not enrolled in this course');
+    }
+    
+    // Obtener todas las submissions del estudiante para esta evaluación
+    const submissions = await this.prisma.submission.findMany({
+      where: {
+        userId,
+        evaluationId: Number(id)
+      },
+      include: {
+        challenge: {
+          select: { id: true, title: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    // Calcular el puntaje por challenge (mejor submission)
+    const challengeScores: { [key: number]: number } = {};
+    
+    evaluation.challenges.forEach(ec => {
+      const challengeSubs = submissions.filter(s => s.challengeId === ec.challengeId);
+      if (challengeSubs.length > 0) {
+        const bestScore = Math.max(...challengeSubs.map(s => s.score || 0));
+        challengeScores[ec.challengeId] = bestScore;
+      } else {
+        challengeScores[ec.challengeId] = 0;
+      }
+    });
+    
+    // Calcular puntaje final (promedio de todos los challenges)
+    const totalChallenges = evaluation.challenges.length;
+    const totalScore = Object.values(challengeScores).reduce((sum, score) => sum + score, 0);
+    const finalScore = totalChallenges > 0 ? Math.round(totalScore / totalChallenges) : 0;
+    
+    return {
+      evaluation: {
+        ...evaluation,
+        challenges: evaluation.challenges.map(ec => ec.challenge)
+      },
+      score: finalScore,
+      challengeScores,
+      submissions: submissions.map(s => ({
+        id: s.id,
+        challengeId: s.challengeId,
+        challengeTitle: s.challenge.title,
+        status: s.status,
+        score: s.score,
+        timeMsTotal: s.timeMsTotal,
+        createdAt: s.createdAt
+      }))
     };
   }
 }
