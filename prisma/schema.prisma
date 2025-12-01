@@ -9,7 +9,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") // Make sure .env uses port 5433
 }
 
 // ===================================================
@@ -21,6 +21,7 @@ enum Role {
   PROFESSOR   // Profesor (puede crear cursos y retos)
   ADMIN       // Administrador (gestiona todo el sistema)
 }
+
 
 enum ChallengeStatus {
   DRAFT       // Borrador (no visible aún)
@@ -52,7 +53,6 @@ enum Difficulty {
 /// Se puede buscar tanto por `username` como por `codigo` (ambos únicos).
 model User {
   id        String   @id @default(uuid())           // PK
-  code      String   @unique                        // Código institucional o identificador interno
   username  String   @unique                        // Nombre de usuario único
   email     String   @unique                        // Correo único
   password  String                                  // Contraseña cifrada
@@ -63,7 +63,7 @@ model User {
 
   // Relaciones:
   courses            Course[]        @relation("CourseProfessor")
-  courseEnrollments  CourseStudent[]                             
+  courseEnrollments  CourseStudent[]
   submissions        Submission[]
   authoredChallenges Challenge[]                   
 }
@@ -73,12 +73,18 @@ model User {
 /// Representa un curso o grupo académico.
 /// Un curso tiene un código, un nombre, un periodo y un grupo.
 model Course {
-  id        String   @id @default(uuid())           // PK
-  code      String   @unique                        // Código único del curso (ej: NRC o identificador)
-  name      String                                  // Nombre del curso
-  period    String                                  // Ej: "2025-1"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())           // PK
+  code        String   @unique                        // Código único del curso (ej: identificador)
+  name        String                                  // Nombre del curso
+  period      String                                  // Ej: "2025-1"
+  description String?                                 // Descripción del curso
+  category    String?                                 // Categoría (ej: "web-development", "data-science")
+  level       String?                                 // Nivel: "beginner", "intermediate", "advanced"
+  group       String?                                 // Grupo (ej: "1", "A")
+  coverImage  String?                                 // URL de la imagen de portada del curso
+  isPublished Boolean  @default(false)                // Si el curso está publicado
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relaciones:
   professors  User[]           @relation("CourseProfessor")   // Profesores asignados (N:M)
@@ -86,6 +92,7 @@ model Course {
   challenges  Challenge[]      @relation("CourseChallenges")  // Retos asociados al curso (1:N)
   evaluations Evaluation[]                                    // Relación con evaluaciones
   submissions Submission[]
+  lessons     Lesson[]                                        // Lecciones del curso
 }
 
 // ===================================================
@@ -97,8 +104,8 @@ model CourseStudent {
   enrolledAt DateTime @default(now())               // Fecha de inscripción
 
   // Relaciones:
-  user   User   @relation(fields: [userId], references: [id])
-  course Course @relation(fields: [courseId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@id([userId, courseId]) // PK compuesta
 }
@@ -117,6 +124,8 @@ model Challenge {
   memoryLimit Int                                  // Límite de memoria (MB)
   status      ChallengeStatus @default(DRAFT)
   isPublic    Boolean         @default(false)
+  solutionCode String?                             // Código de solución de referencia (solo visible para estudiantes)
+  solutionLanguage String?                         // Lenguaje del código de solución (python, javascript, cpp, java)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
@@ -140,7 +149,7 @@ model Testcase {
   output      String                                  // Salida
   visible     Boolean   @default(false)               // Indica si el caso es visible
 
-  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
 
   @@id([challengeId, caseNumber])
@@ -167,10 +176,11 @@ model Submission {
   evaluationId    Int?
 
   // Relaciones:
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  challenge       Challenge     @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  course          Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  evaluation      Evaluation?   @relation(fields: [evaluationId], references: [id], onDelete: SetNull)
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge       Challenge               @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  course          Course?                 @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  evaluation      Evaluation?             @relation(fields: [evaluationId], references: [id], onDelete: SetNull)
+  testResults     SubmissionTestResult[]  // Resultados individuales por caso de prueba
 
   @@unique([userId, challengeId, courseId, evaluationId, submissionNumber])
 }
@@ -203,4 +213,58 @@ model EvaluationChallenge {
   challenge  Challenge  @relation(fields: [challengeId], references: [id])
 
   @@unique([evaluationId, challengeId])
+}
+
+// ===================================================
+
+/// Resultado individual de cada caso de prueba ejecutado en un submission.
+/// Almacena el estado, tiempo de ejecución y salida de cada test case.
+model SubmissionTestResult {
+  id           Int      @id @default(autoincrement())
+  submissionId Int                                      // FK → Submission.id
+  caseNumber   Int                                      // Número del caso de prueba
+  status       String                                   // "OK", "WRONG_ANSWER", "TIME_LIMIT_EXCEEDED", "RUNTIME_ERROR"
+  timeMs       Int                                      // Tiempo de ejecución en milisegundos
+  output       String?                                  // Salida generada (opcional, para debugging)
+  errorMsg     String?                                  // Mensaje de error si lo hay
+  createdAt    DateTime @default(now())
+
+  // Relaciones:
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, caseNumber])
+  @@index([submissionId])
+}
+
+// ===================================================
+
+/// Lección dentro de un curso (contenido de aprendizaje)
+model Lesson {
+  id          String   @id @default(uuid())
+  courseId    String
+  title       String
+  description String?
+  videoUrl    String?
+  duration    String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course    Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  resources LessonResource[]
+
+  @@index([courseId, order])
+}
+
+// ===================================================
+
+/// Recurso asociado a una lección (PDFs, links, código, etc.)
+model LessonResource {
+  id       String @id @default(uuid())
+  lessonId String
+  title    String
+  url      String
+  type     String // "pdf", "doc", "code", "link", "other"
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 }

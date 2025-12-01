@@ -21,7 +21,7 @@ export class CreateCourseUseCase {
     let professorIds: string[] = [];
     if (dto.professorCode && dto.professorCode.length > 0) {
       const professors = await Promise.all(
-        dto.professorCode.map((code) => this.userRepo.findByCodigo(code))
+        dto.professorCode.map((id) => this.userRepo.findById(id))
       );
       professorIds = professors
         .filter((p) => p !== null)

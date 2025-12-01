@@ -10,6 +10,15 @@ export enum Difficulty {
   HARD = 'HARD'
 }
 
+export interface TestCase {
+  challengeId?: string; // Opcional porque ya está implícito en el Challenge
+  caseNumber: number;
+  input: string;
+  output: string;
+  visible: boolean;
+  createdAt?: Date;
+}
+
 export class Challenge {
   constructor (
     public id: string,
@@ -21,6 +30,7 @@ export class Challenge {
     public memoryLimit: number,
     public status: ChallengeStatus,
     public isPublic: boolean,
-    public authorId: string
+    public authorId: string,
+    public testCases?: TestCase[]
   ) {}
 }

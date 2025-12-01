@@ -4,21 +4,36 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CoreModule } from './presentation/modules/db.module';
 import { UserModule } from './presentation/modules/user.module';
-import { CourseModule } from './presentation/modules/course.module';
+//import { CourseModule } from './presentation/modules/course.module';
 import { ChallengeModule} from './presentation/modules/challenge.module';
 import { AuthModule } from './presentation/modules/auth.module';
+import { SubmissionModule } from './presentation/modules/submission.module';
+import { CoursesExtendedModule } from './presentation/modules/courses-extended.module';
+import { EvaluationsModule } from './presentation/modules/evaluations.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import { RedisModule } from './infrastructure/redis/redis.module';
+import { RunnerModule } from './infrastructure/runners/runner.module';
+import { ObservabilityModule } from './infrastructure/observability/observability.module';
+import { MetricsController } from './presentation/controllers/metrics.controller';
+import { AdminController } from './presentation/controllers/admin.controller';
+import { PrismaModule } from './infrastructure/prisma.module';
+import { GeminiModule } from './presentation/modules/gemini.module';
 
 @Module({
   imports: [ 
     CoreModule,
     UserModule,
-    CourseModule,
+    //CourseModule,
     ChallengeModule,
     AuthModule,
+    SubmissionModule,
+    CoursesExtendedModule,
+    EvaluationsModule,
     RedisModule,
+    RunnerModule,
+    ObservabilityModule,
+    GeminiModule,
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: async () => ({
@@ -29,9 +44,10 @@ import { RedisModule } from './infrastructure/redis/redis.module';
         }),
       }),
     }),
+    PrismaModule,
   ],
   
-  controllers: [AppController],
+  controllers: [AppController, MetricsController, AdminController],
   providers: [AppService],
 })
 export class AppModule {}

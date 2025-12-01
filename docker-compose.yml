@@ -1,64 +1,157 @@
-version: "3.9"
-
+version: '3.8'
 services:
-  db:
-    image: postgres:16
-    container_name: db_proyecto_final
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-    ports:
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-  
   backend:
+    container_name: api_proyecto_final
     build:
       context: .
-      target: development
-    container_name: api_proyecto_final
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app:delegated
+      - /app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      DATABASE_URL: "postgresql://user:pass@db:5432/db?schema=public"
-      REDIS_URL: "redis://default:redispass@redis:6379/0"
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://user:pass@db:5432/codechallenges?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=supersecret
+      - JWT_ACCESS_SECRET=dev-access-secret-change-in-production
+      - JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
     ports:
       - "3000:3000"
     depends_on:
-      redis:
-        condition: service_healthy
       db:
         condition: service_healthy
-    restart: unless-stopped
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     volumes:
-      - ./src:/app/src  # Mount the source code
-      - /app/node_modules  # Ensure node_modules is accessible
-    command: npm run start:dev  # Use the development command
+      - .:/app:delegated
+      - /app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/codechallenges-runs:/tmp/codechallenges-runs
+    environment:
+      - NODE_ENV=development
+      - ENABLE_WORKER=true
+      - RUNNER_TMP_DIR=/tmp/codechallenges-runs
+      - DATABASE_URL=postgresql://user:pass@db:5432/codechallenges?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=supersecret
+    depends_on:
+      - backend
+      - redis
+      - db
+    # Los runners no son servicios, solo imágenes preconstruidas
+
+  # Code execution runner images
+  # These are built automatically but only used by worker via 'docker run'
+  # Using 'scale: 0' ensures images are built but containers don't start
+  runner-python:
+    image: runner-python:latest
+    build:
+      context: ./runners
+      dockerfile: runner-python/Dockerfile
+    command: "true"  # No-op command
+    deploy:
+      replicas: 0  # No iniciar contenedores
+    restart: "no"
+
+  runner-node:
+    image: runner-node:latest
+    build:
+      context: ./runners
+      dockerfile: runner-node/Dockerfile
+    command: "true"
+    deploy:
+      replicas: 0
+    restart: "no"
+
+  runner-java:
+    image: runner-java:latest
+    build:
+      context: ./runners
+      dockerfile: runner-java/Dockerfile
+    command: "true"
+    deploy:
+      replicas: 0
+    restart: "no"
+
+  runner-cpp:
+    image: runner-cpp:latest
+    build:
+      context: ./runners
+      dockerfile: runner-cpp/Dockerfile
+    command: "true"
+    deploy:
+      replicas: 0
+    restart: "no"
+  
+
+  db:
+    container_name: db_proyecto_final
+    image: postgres:16
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: codechallenges
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d codechallenges"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--requirepass", "redispass"]
+    restart: always
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "redispass", "PING"]
+      test: ["CMD-SHELL", "redis-cli ping"]
       interval: 5s
       timeout: 3s
-      retries: 20
+      retries: 30
 
   redis-commander:
     image: rediscommander/redis-commander:latest
-    depends_on:
-      - redis
+    restart: always
     environment:
-      - REDIS_HOSTS=local:redis:6379:0:redispass
+      - REDIS_HOSTS=local:redis:6379
     ports:
       - "8081:8081"
+    depends_on:
+      - redis
+
+  frontend:
+    container_name: frontend_proyecto_final
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
 
 volumes:
-  db_data:
+  pgdata:

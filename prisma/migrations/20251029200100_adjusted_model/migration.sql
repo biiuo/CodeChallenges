@@ -63,7 +63,6 @@ DROP SEQUENCE "Challenge_id_seq";
 -- AlterTable
 ALTER TABLE "Course" DROP CONSTRAINT "Course_pkey",
 DROP COLUMN "group",
-DROP COLUMN "nrc",
 ADD COLUMN     "code" TEXT NOT NULL,
 ALTER COLUMN "id" DROP DEFAULT,
 ALTER COLUMN "id" SET DATA TYPE TEXT,

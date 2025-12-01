@@ -6,15 +6,19 @@ import * as bcrypt from 'bcrypt';
 export class UpdateUserUseCase {
   constructor(private readonly userRepo: UserRepository) {}
 
-  async execute(code: string, dto: UpdateUserDTO): Promise<User> {
-    const user = await this.userRepo.findByCodigo(code);
+  async execute(id: string, dto: UpdateUserDTO): Promise<User> {
+    const user = await this.userRepo.findById(id);
     if (!user) throw new Error('User not found');
 
-    let updatedData: any = { ...dto };
+    const updatedData: any = { ...dto };
     if (dto.password) {
       updatedData.password = await bcrypt.hash(dto.password, 10);
     }
 
-    return this.userRepo.update(code, updatedData);
+    // repository.update currently expects code:string; change to use id field inside data
+    return this.userRepo.update(user.id, {
+      id: user.id,
+      ...updatedData,
+    });
   }
 }

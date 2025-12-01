@@ -17,18 +17,30 @@ export class CreateChallengeUseCase {
       throw new ChallengeTitleAlreadyExistsException(dto.title);
     }
 
+    // Ensure authorId is set (should be populated by controller from JWT token)
+    if (!dto.authorId) {
+      throw new Error('authorId is required but was not provided');
+    }
+
     // Validations passed, create the challenge
     const challenge = new Challenge(
       this.generateChallengeId(),
       dto.title,
       dto.description,
-      dto.difficulty as any,
-      dto.tags,
+      (dto.difficulty as any) || 'EASY',
+      (dto.tags && dto.tags.length > 0) ? dto.tags : ['general'],
       dto.timeLimit,
       dto.memoryLimit,
       dto.status ? (dto.status as ChallengeStatus) : ChallengeStatus.DRAFT,
       dto.isPublic ?? false,
       dto.authorId,
+      dto.testcases?.map(tc => ({
+        caseNumber: tc.caseNumber,
+        input: tc.input,
+        output: tc.output,
+        visible: tc.visible ?? true,
+        createdAt: new Date()
+      }))
     );
 
     return this.challengeRepo.create(challenge);
